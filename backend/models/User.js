@@ -1,25 +1,40 @@
-const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const { pool } = require('../config/db');
 
-const userSchema = mongoose.Schema({
-  nombre: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  rol: { 
-    type: String, 
-    enum: ['directivo', 'alumno', 'padre'], 
-    default: 'alumno' 
-  }
-}, { timestamps: true });
+const User = {
+  async findById(id) {
+    const [rows] = await pool.query('SELECT * FROM usuarios WHERE id_usuario = ?', [id]);
+    if (!rows.length) return null;
+    return attachMethods(rows[0]);
+  },
 
-userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-});
+  async findOne(conditions) {
+    const [rows] = await pool.query('SELECT * FROM usuarios WHERE ? LIMIT 1', conditions);
+    if (!rows.length) return null;
+    return attachMethods(rows[0]);
+  },
 
-userSchema.methods.matchPassword = async function(enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.password);
+  async find(conditions) {
+    const [rows] = await pool.query('SELECT * FROM usuarios WHERE ?', conditions);
+    return rows;
+  },
+
+  async create(data) {
+    const salt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(data.password, salt);
+    const [result] = await pool.query(
+      'INSERT INTO usuarios (nombre, email, password, rol) VALUES (?, ?, ?, ?)',
+      [data.nombre, data.email, hash, data.rol || 'alumno']
+    );
+    return { id_usuario: result.insertId, nombre: data.nombre, email: data.email, rol: data.rol || 'alumno' };
+  },
 };
 
-module.exports = mongoose.model('User', userSchema);
+function attachMethods(user) {
+  user.matchPassword = async function (enteredPassword) {
+    return await bcrypt.compare(enteredPassword, this.password);
+  };
+  return user;
+}
+
+module.exports = User;

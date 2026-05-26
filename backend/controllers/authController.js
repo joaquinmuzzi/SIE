@@ -1,12 +1,11 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const { pool } = require('../config/db');
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 };
 
-// @desc    Registrar nuevo usuario
-// @route   POST /api/auth/register
 exports.registerUser = async (req, res) => {
   const { nombre, email, password, rol } = req.body;
 
@@ -20,11 +19,11 @@ exports.registerUser = async (req, res) => {
 
     if (user) {
       res.status(201).json({
-        _id: user._id,
+        _id: user.id_usuario,
         nombre: user.nombre,
         email: user.email,
         rol: user.rol,
-        token: generateToken(user._id),
+        token: generateToken(user.id_usuario),
       });
     }
   } catch (error) {
@@ -32,8 +31,6 @@ exports.registerUser = async (req, res) => {
   }
 };
 
-// @desc    Login usuario
-// @route   POST /api/auth/login
 exports.loginUser = async (req, res) => {
   const { email, password } = req.body;
 
@@ -41,11 +38,11 @@ exports.loginUser = async (req, res) => {
     const user = await User.findOne({ email });
     if (user && (await user.matchPassword(password))) {
       res.json({
-        _id: user._id,
+        _id: user.id_usuario,
         nombre: user.nombre,
         email: user.email,
         rol: user.rol,
-        token: generateToken(user._id),
+        token: generateToken(user.id_usuario),
       });
     } else {
       res.status(401).json({ message: 'Email o contraseña inválidos' });
@@ -55,12 +52,12 @@ exports.loginUser = async (req, res) => {
   }
 };
 
-// @desc    Obtener lista de alumnos (solo para directivos)
-// @route   GET /api/auth/alumnos
 exports.getAlumnos = async (req, res) => {
   try {
-    const alumnos = await User.find({ rol: { $in: ['alumno', 'padre'] } }).select('nombre email');
-    res.json(alumnos);
+    const [rows] = await pool.query(
+      `SELECT id_usuario AS _id, nombre, email FROM usuarios WHERE rol IN ('alumno', 'padre')`
+    );
+    res.json(rows);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
