@@ -9,13 +9,19 @@ const User = {
   },
 
   async findOne(conditions) {
-    const [rows] = await pool.query('SELECT * FROM usuarios WHERE ? LIMIT 1', conditions);
+    const keys = Object.keys(conditions);
+    const values = keys.map((k) => conditions[k]);
+    const where = keys.map((k) => `${k} = ?`).join(' AND ');
+    const [rows] = await pool.query(`SELECT * FROM usuarios WHERE ${where} LIMIT 1`, values);
     if (!rows.length) return null;
     return attachMethods(rows[0]);
   },
 
   async find(conditions) {
-    const [rows] = await pool.query('SELECT * FROM usuarios WHERE ?', conditions);
+    const keys = Object.keys(conditions);
+    const values = keys.map((k) => conditions[k]);
+    const where = keys.map((k) => `${k} = ?`).join(' AND ');
+    const [rows] = await pool.query(`SELECT * FROM usuarios WHERE ${where}`, values);
     return rows;
   },
 
