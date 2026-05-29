@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://sie-production-014a.up.railway.app/api/',
+  baseURL: 'https://sie-production-014a.up.railway.app/',
 });
 
 // Interceptor para agregar el token a todas las peticiones
