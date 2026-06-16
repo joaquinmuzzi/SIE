@@ -7,7 +7,7 @@ const generateToken = (id) => {
 };
 
 exports.registerUser = async (req, res) => {
-  const { nombre, email, password, rol } = req.body;
+  const { nombre, email, password, rol, dni, telefono, cargo, tiene_acceso } = req.body;
 
   try {
     const userExists = await User.findOne({ email });
@@ -15,7 +15,7 @@ exports.registerUser = async (req, res) => {
       return res.status(400).json({ message: 'El usuario ya existe' });
     }
 
-    const user = await User.create({ nombre, email, password, rol });
+    const user = await User.create({ nombre, email, password, rol, dni, telefono, cargo, tiene_acceso });
 
     if (user) {
       res.status(201).json({
@@ -23,6 +23,10 @@ exports.registerUser = async (req, res) => {
         nombre: user.nombre,
         email: user.email,
         rol: user.rol,
+        dni: user.dni,
+        telefono: user.telefono,
+        cargo: user.cargo,
+        tiene_acceso: user.tiene_acceso,
         token: generateToken(user.id_usuario),
       });
     }
@@ -42,10 +46,14 @@ exports.loginUser = async (req, res) => {
         nombre: user.nombre,
         email: user.email,
         rol: user.rol,
+        dni: user.dni,
+        telefono: user.telefono,
+        cargo: user.cargo,
+        tiene_acceso: user.tiene_acceso,
         token: generateToken(user.id_usuario),
       });
     } else {
-      res.status(401).json({ message: 'Email o contraseña inválidos' });
+      res.status(401).json({ message: 'Email o contrasena invalidos' });
     }
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -55,7 +63,18 @@ exports.loginUser = async (req, res) => {
 exports.getAlumnos = async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT id_usuario AS _id, nombre, email FROM usuarios WHERE rol IN ('alumno', 'padre')`
+      `SELECT id_usuario AS _id, nombre, email, dni, telefono FROM usuarios WHERE rol = 'alumno'`
+    );
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getUsers = async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT id_usuario AS _id, nombre, email, rol, dni, telefono, cargo, tiene_acceso FROM usuarios`
     );
     res.json(rows);
   } catch (error) {

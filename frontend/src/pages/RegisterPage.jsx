@@ -7,6 +7,9 @@ const RegisterPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rol, setRol] = useState('alumno');
+  const [dni, setDni] = useState('');
+  const [telefono, setTelefono] = useState('');
+  const [cargo, setCargo] = useState('');
   const [error, setError] = useState('');
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -14,12 +17,14 @@ const RegisterPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await register(nombre, email, password, rol);
+      await register(nombre, email, password, rol, dni, telefono, cargo);
       navigate('/');
     } catch (err) {
       setError('Error al registrar usuario');
     }
   };
+
+  const rolesConCargo = ['gestor', 'directivo', 'regente'];
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -48,7 +53,7 @@ const RegisterPage = () => {
             />
           </div>
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2">Contraseña</label>
+            <label className="block text-gray-700 text-sm font-bold mb-2">Contrasena</label>
             <input
               type="password"
               className="w-full p-2 border rounded focus:outline-blue-500"
@@ -57,7 +62,25 @@ const RegisterPage = () => {
               required
             />
           </div>
-          <div className="mb-6">
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-bold mb-2">DNI</label>
+            <input
+              type="text"
+              className="w-full p-2 border rounded focus:outline-blue-500"
+              value={dni}
+              onChange={(e) => setDni(e.target.value)}
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-bold mb-2">Telefono</label>
+            <input
+              type="text"
+              className="w-full p-2 border rounded focus:outline-blue-500"
+              value={telefono}
+              onChange={(e) => setTelefono(e.target.value)}
+            />
+          </div>
+          <div className="mb-4">
             <label className="block text-gray-700 text-sm font-bold mb-2">Rol</label>
             <select
               className="w-full p-2 border rounded focus:outline-blue-500"
@@ -65,10 +88,28 @@ const RegisterPage = () => {
               onChange={(e) => setRol(e.target.value)}
             >
               <option value="alumno">Alumno</option>
-              <option value="padre">Padre</option>
+              <option value="padre">Padre / Tutor</option>
+              <option value="profesor">Profesor</option>
+              <option value="preceptor">Preceptor</option>
+              <option value="regente">Regente</option>
+              <option value="gestor">Gestor (Rector, Vicerrector, etc.)</option>
               <option value="directivo">Directivo</option>
+              <option value="secretaria">Secretaria</option>
+              <option value="asesoria_pedagogica">Asesoria Pedagogica / DOE / PAT</option>
             </select>
           </div>
+          {rolesConCargo.includes(rol) && (
+            <div className="mb-4">
+              <label className="block text-gray-700 text-sm font-bold mb-2">Cargo</label>
+              <input
+                type="text"
+                className="w-full p-2 border rounded focus:outline-blue-500"
+                placeholder="Ej: Director, Regente, Rector..."
+                value={cargo}
+                onChange={(e) => setCargo(e.target.value)}
+              />
+            </div>
+          )}
           <button
             type="submit"
             className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 transition"
@@ -77,7 +118,7 @@ const RegisterPage = () => {
           </button>
         </form>
         <p className="mt-4 text-center text-sm">
-          ¿Ya tienes cuenta? <Link to="/login" className="text-blue-600 hover:underline">Ingresa</Link>
+          Ya tienes cuenta? <Link to="/login" className="text-blue-600 hover:underline">Ingresa</Link>
         </p>
       </div>
     </div>
