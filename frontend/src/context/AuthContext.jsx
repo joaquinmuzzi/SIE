@@ -21,10 +21,11 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('userInfo', JSON.stringify(data));
   };
 
-  const register = async (nombre, email, password, rol, dni, telefono, cargo, curso) => {
-    const { data } = await api.post('/auth/register', { nombre, email, password, rol, dni, telefono, cargo, curso });
+  const register = async (nombre, email, password, rol, dni, telefono, cargo, curso, id_padre) => {
+    const { data } = await api.post('/auth/register', { nombre, email, password, rol, dni, telefono, cargo, curso, id_padre });
     setUser(data);
     localStorage.setItem('userInfo', JSON.stringify(data));
+    return data;
   };
 
   const logout = () => {

@@ -93,3 +93,42 @@ exports.getUsers = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+exports.getPadres = async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT id_usuario AS _id, nombre, email, dni, telefono FROM usuarios WHERE rol = 'padre' OR rol = 'tutor'`
+    );
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getAlumnosSinPadre = async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT id_usuario AS _id, nombre, email, dni, curso FROM usuarios WHERE rol = 'alumno' AND id_padre IS NULL`
+    );
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.linkHijos = async (req, res) => {
+  try {
+    const { id_padre, alumno_ids } = req.body;
+    if (!id_padre || !alumno_ids || !alumno_ids.length) {
+      return res.status(400).json({ message: 'Se requiere id_padre y al menos un alumno' });
+    }
+
+    for (const id_alumno of alumno_ids) {
+      await pool.query('UPDATE usuarios SET id_padre = ? WHERE id_usuario = ?', [id_padre, id_alumno]);
+    }
+
+    res.json({ message: `${alumno_ids.length} alumno(s) vinculado(s) correctamente` });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
