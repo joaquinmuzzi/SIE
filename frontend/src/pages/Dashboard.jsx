@@ -70,6 +70,10 @@ const Dashboard = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.id_padre) {
+      alert('El alumno seleccionado no tiene padre/tutor asignado. No se puede crear el informe.');
+      return;
+    }
     try {
       if (editingId) {
         await api.put(`/reports/${editingId}`, formData);
@@ -381,18 +385,16 @@ const Dashboard = () => {
               </div>
 
               <div className="mb-4">
-                <label className="block text-sm font-bold mb-1">Padre / Tutor a Notificar *</label>
-                <select
-                  className="w-full p-2 border rounded"
-                  value={formData.id_padre}
-                  onChange={(e) => setFormData({ ...formData, id_padre: e.target.value })}
-                  required
-                >
-                  <option value="">Seleccionar...</option>
-                  {padres.map((p) => (
-                    <option key={p._id} value={p._id}>{p.nombre} ({p.email})</option>
-                  ))}
-                </select>
+                <label className="block text-sm font-bold mb-1">Padre / Tutor a Notificar</label>
+                {formData.id_padre ? (
+                  <div className="w-full p-2 border rounded bg-gray-50 text-gray-700">
+                    {padres.find((p) => String(p._id) === String(formData.id_padre))?.nombre || 'Cargando...'}
+                  </div>
+                ) : (
+                  <div className="w-full p-2 border rounded bg-red-50 text-red-600 text-sm">
+                    El alumno seleccionado no tiene padre/tutor asignado. Edite el alumno para vincularlo.
+                  </div>
+                )}
               </div>
 
               {canEditProfesor && (
