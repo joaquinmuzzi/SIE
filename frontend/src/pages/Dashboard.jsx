@@ -9,7 +9,7 @@ const Dashboard = () => {
   const [showModal, setShowModal] = useState(false);
   const [showDescargoModal, setShowDescargoModal] = useState(false);
   const [alumnos, setAlumnos] = useState([]);
-  const [users, setUsers] = useState([]);
+  const [padres, setPadres] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [descargoReportId, setDescargoReportId] = useState(null);
   const [descargoText, setDescargoText] = useState('');
@@ -37,7 +37,7 @@ const Dashboard = () => {
     fetchReports();
     if (canCreate) {
       fetchAlumnos();
-      fetchUsers();
+      fetchPadres();
     }
   }, []);
 
@@ -59,10 +59,10 @@ const Dashboard = () => {
     }
   };
 
-  const fetchUsers = async () => {
+  const fetchPadres = async () => {
     try {
-      const { data } = await api.get('/auth/users');
-      setUsers(data);
+      const { data } = await api.get('/auth/padres');
+      setPadres(data);
     } catch (err) {
       console.error(err);
     }
@@ -195,8 +195,6 @@ const Dashboard = () => {
       </span>
     );
   };
-
-  const padres = users.filter((u) => u.rol === 'padre' || u.rol === 'tutor');
 
   return (
     <div className="min-h-screen bg-gray-50">
