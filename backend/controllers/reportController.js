@@ -26,6 +26,10 @@ exports.createReport = async (req, res) => {
   } = req.body;
 
   try {
+    if (!id_padre) {
+      return res.status(400).json({ message: 'El padre/tutor es obligatorio para crear un informe' });
+    }
+
     const report = await Report.create({
       titulo,
       tipo,
@@ -117,6 +121,26 @@ exports.deleteReport = async (req, res) => {
 
     const updatedReport = await Report.softDelete(req.params.id);
     res.json({ message: 'Informe cerrado', informe: updatedReport });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.changeState = async (req, res) => {
+  try {
+    const report = await Report.findById(req.params.id);
+    if (!report) {
+      return res.status(404).json({ message: 'Informe no encontrado' });
+    }
+
+    const { estado } = req.body;
+    const validStates = ['abierto', 'en_revision', 'cerrado'];
+    if (!validStates.includes(estado)) {
+      return res.status(400).json({ message: 'Estado invalido. Valores permitidos: abierto, en_revision, cerrado' });
+    }
+
+    const updatedReport = await Report.update(req.params.id, { estado });
+    res.json(updatedReport);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

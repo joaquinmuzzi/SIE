@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
-import { Plus, Trash2, Edit, MessageSquare } from 'lucide-react';
+import { Plus, Trash2, Edit, MessageSquare, CheckCircle } from 'lucide-react';
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
@@ -26,7 +26,12 @@ const Dashboard = () => {
 
   const canCreate = ['gestor', 'directivo', 'profesor', 'preceptor', 'regente'].includes(user.rol);
   const canDelete = ['gestor', 'directivo'].includes(user.rol);
+  const canChangeState = ['gestor', 'directivo', 'regente'].includes(user.rol);
   const isAlumno = user.rol === 'alumno';
+
+  const canEditProfesor = ['gestor', 'directivo', 'profesor', 'preceptor'].includes(user.rol);
+  const canEditRegente = ['gestor', 'directivo', 'regente'].includes(user.rol);
+  const canEditPat = ['gestor', 'directivo', 'asesoria_pedagogica', 'doe', 'pat'].includes(user.rol);
 
   useEffect(() => {
     fetchReports();
@@ -75,7 +80,7 @@ const Dashboard = () => {
       resetForm();
       fetchReports();
     } catch (err) {
-      alert('Error al guardar informe');
+      alert(err.response?.data?.message || 'Error al guardar informe');
     }
   };
 
@@ -96,6 +101,15 @@ const Dashboard = () => {
     if (window.confirm('Cerrar este informe?')) {
       await api.delete(`/reports/${id}`);
       fetchReports();
+    }
+  };
+
+  const handleChangeState = async (id, nuevoEstado) => {
+    try {
+      await api.patch(`/reports/${id}/state`, { estado: nuevoEstado });
+      fetchReports();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Error al cambiar estado');
     }
   };
 
@@ -134,6 +148,13 @@ const Dashboard = () => {
     setEditingId(null);
   };
 
+  const handleAlumnoChange = (e) => {
+    const idAlumno = e.target.value;
+    const alumnoSeleccionado = alumnos.find((a) => a._id === Number(idAlumno));
+    const idPadreAuto = alumnoSeleccionado?.id_padre || '';
+    setFormData({ ...formData, id_alumno: idAlumno, id_padre: idPadreAuto ? String(idPadreAuto) : '' });
+  };
+
   const gravedadBadge = (gravedad) => {
     const styles = {
       leve: 'bg-yellow-100 text-yellow-800',
@@ -150,13 +171,13 @@ const Dashboard = () => {
 
   const estadoBadge = (estado) => {
     const styles = {
-      activo: 'bg-green-100 text-green-800',
-      suspendido: 'bg-yellow-100 text-yellow-800',
+      abierto: 'bg-green-100 text-green-800',
+      en_revision: 'bg-blue-100 text-blue-800',
       cerrado: 'bg-gray-200 text-gray-600',
     };
-    const labels = { activo: 'Activo', suspendido: 'Suspendido', cerrado: 'Cerrado' };
+    const labels = { abierto: 'Abierto', en_revision: 'En Revision', cerrado: 'Cerrado' };
     return (
-      <span className={`text-xs font-bold px-2 py-1 rounded-full ${styles[estado] || styles.activo}`}>
+      <span className={`text-xs font-bold px-2 py-1 rounded-full ${styles[estado] || styles.abierto}`}>
         {labels[estado] || estado}
       </span>
     );
@@ -224,7 +245,7 @@ const Dashboard = () => {
                     </p>
                   </div>
                   <div className="flex gap-2">
-                    {canCreate && (
+                    {canCreate && report.estado !== 'cerrado' && (
                       <button onClick={() => handleEdit(report)} className="text-gray-400 hover:text-blue-600">
                         <Edit size={18} />
                       </button>
@@ -232,6 +253,24 @@ const Dashboard = () => {
                     {canDelete && (
                       <button onClick={() => handleDelete(report._id)} className="text-gray-400 hover:text-red-600">
                         <Trash2 size={18} />
+                      </button>
+                    )}
+                    {canChangeState && report.estado === 'abierto' && (
+                      <button
+                        onClick={() => handleChangeState(report._id, 'en_revision')}
+                        className="text-gray-400 hover:text-blue-600"
+                        title="Poner en revision"
+                      >
+                        <CheckCircle size={18} />
+                      </button>
+                    )}
+                    {canChangeState && report.estado === 'en_revision' && (
+                      <button
+                        onClick={() => handleChangeState(report._id, 'cerrado')}
+                        className="text-gray-400 hover:text-green-600"
+                        title="Finalizar informe"
+                      >
+                        <CheckCircle size={18} />
                       </button>
                     )}
                   </div>
@@ -332,7 +371,7 @@ const Dashboard = () => {
                   <select
                     className="w-full p-2 border rounded"
                     value={formData.id_alumno}
-                    onChange={(e) => setFormData({ ...formData, id_alumno: e.target.value })}
+                    onChange={handleAlumnoChange}
                     required
                   >
                     <option value="">Seleccionar...</option>
@@ -344,43 +383,50 @@ const Dashboard = () => {
               </div>
 
               <div className="mb-4">
-                <label className="block text-sm font-bold mb-1">Padre / Tutor a Notificar</label>
+                <label className="block text-sm font-bold mb-1">Padre / Tutor a Notificar *</label>
                 <select
                   className="w-full p-2 border rounded"
                   value={formData.id_padre}
                   onChange={(e) => setFormData({ ...formData, id_padre: e.target.value })}
+                  required
                 >
-                  <option value="">Sin asignar</option>
+                  <option value="">Seleccionar...</option>
                   {padres.map((p) => (
                     <option key={p._id} value={p._id}>{p.nombre} ({p.email})</option>
                   ))}
                 </select>
               </div>
 
-              <div className="mb-4">
-                <label className="block text-sm font-bold mb-1">Texto del Profesor</label>
-                <textarea
-                  className="w-full p-2 border rounded h-24"
-                  value={formData.texto_profesor}
-                  onChange={(e) => setFormData({ ...formData, texto_profesor: e.target.value })}
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-bold mb-1">Texto del Regente</label>
-                <textarea
-                  className="w-full p-2 border rounded h-24"
-                  value={formData.texto_regente}
-                  onChange={(e) => setFormData({ ...formData, texto_regente: e.target.value })}
-                />
-              </div>
-              <div className="mb-6">
-                <label className="block text-sm font-bold mb-1">Texto del PAT</label>
-                <textarea
-                  className="w-full p-2 border rounded h-24"
-                  value={formData.texto_pat}
-                  onChange={(e) => setFormData({ ...formData, texto_pat: e.target.value })}
-                />
-              </div>
+              {canEditProfesor && (
+                <div className="mb-4">
+                  <label className="block text-sm font-bold mb-1">Texto del Profesor</label>
+                  <textarea
+                    className="w-full p-2 border rounded h-24"
+                    value={formData.texto_profesor}
+                    onChange={(e) => setFormData({ ...formData, texto_profesor: e.target.value })}
+                  />
+                </div>
+              )}
+              {canEditRegente && (
+                <div className="mb-4">
+                  <label className="block text-sm font-bold mb-1">Texto del Regente</label>
+                  <textarea
+                    className="w-full p-2 border rounded h-24"
+                    value={formData.texto_regente}
+                    onChange={(e) => setFormData({ ...formData, texto_regente: e.target.value })}
+                  />
+                </div>
+              )}
+              {canEditPat && (
+                <div className="mb-6">
+                  <label className="block text-sm font-bold mb-1">Texto del PAT</label>
+                  <textarea
+                    className="w-full p-2 border rounded h-24"
+                    value={formData.texto_pat}
+                    onChange={(e) => setFormData({ ...formData, texto_pat: e.target.value })}
+                  />
+                </div>
+              )}
 
               <div className="flex justify-end gap-4">
                 <button

@@ -10,14 +10,27 @@ const RegisterPage = () => {
   const [dni, setDni] = useState('');
   const [telefono, setTelefono] = useState('');
   const [cargo, setCargo] = useState('');
+  const [curso, setCurso] = useState('');
   const [error, setError] = useState('');
   const { register } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+
+    if (dni && !/^\d{7,8}$/.test(dni)) {
+      setError('El DNI debe contener entre 7 y 8 digitos');
+      return;
+    }
+
+    if ((rol === 'profesor' || rol === 'preceptor') && !email.endsWith('@bue.edu.ar')) {
+      setError('El email del profesor/preceptor debe ser @bue.edu.ar');
+      return;
+    }
+
     try {
-      await register(nombre, email, password, rol, dni, telefono, cargo);
+      await register(nombre, email, password, rol, dni, telefono, cargo, curso);
       navigate('/');
     } catch (err) {
       setError('Error al registrar usuario');
@@ -67,6 +80,7 @@ const RegisterPage = () => {
             <input
               type="text"
               className="w-full p-2 border rounded focus:outline-blue-500"
+              placeholder="7-8 digitos"
               value={dni}
               onChange={(e) => setDni(e.target.value)}
             />

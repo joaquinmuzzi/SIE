@@ -104,7 +104,7 @@ const Report = {
         data.titulo,
         data.tipo || 'conducta',
         data.gravedad || 'leve',
-        data.estado || 'activo',
+        data.estado || 'abierto',
         data.texto_profesor || null,
         data.texto_regente || null,
         data.texto_pat || null,

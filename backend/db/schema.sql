@@ -7,11 +7,16 @@ CREATE TABLE IF NOT EXISTS usuarios (
   dni           VARCHAR(15)    NULL,
   telefono      VARCHAR(20)    NULL,
   cargo         VARCHAR(50)    NULL,
+  curso         VARCHAR(20)    NULL,
+  id_padre      INT            NULL,
   tiene_acceso  TINYINT(1)     NOT NULL DEFAULT 0,
   created_at    DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at    DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT pk_usuarios PRIMARY KEY (id_usuario),
-  CONSTRAINT uq_usuarios_email UNIQUE (email)
+  CONSTRAINT uq_usuarios_email UNIQUE (email),
+  CONSTRAINT fk_usuarios_padre
+    FOREIGN KEY (id_padre) REFERENCES usuarios (id_usuario)
+    ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS informes (
@@ -19,7 +24,7 @@ CREATE TABLE IF NOT EXISTS informes (
   titulo                VARCHAR(200)   NOT NULL,
   tipo                  VARCHAR(30)    NOT NULL DEFAULT 'conducta',
   gravedad              VARCHAR(20)    NOT NULL DEFAULT 'leve',
-  estado                VARCHAR(20)    NOT NULL DEFAULT 'activo',
+  estado                VARCHAR(20)    NOT NULL DEFAULT 'abierto',
   texto_profesor        TEXT           NULL,
   texto_regente         TEXT           NULL,
   texto_pat             TEXT           NULL,

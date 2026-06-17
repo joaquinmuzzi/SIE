@@ -1,0 +1,173 @@
+Aclarar dudas con la regente del turno mañana.
+ Preguntas:
+¿Cómo funciona actualmente el registro y envío de informes?
+¿Cuáles son las distintas áreas de docencia que tiene el colegio?
+¿Por qué creen que debería automatizarse el proceso?
+¿Cuál es la cadena de mando una vez que se emite el informe? (¿Pasa primero por Regencia, los proesores, luego a Dirección, o se informa directamente a los padres?)
+¿Existen informes que requieran una "firma" o confirmación de lectura obligatoria? (Para saber si la app necesita un sistema de acuse de recibo).
+¿Cómo categorizan hoy los informes? (Por ejemplo: disciplina, rendimiento académico, salud, o temas sociofamiliares).
+¿Cómo es la base de datos del colegio?
+¿Cómo se puede ver el historial de informes fisicamente?
+¿Existen diferentes tipo de informes?¿Cuales?
+
+
+
+Documento de Relevamiento: Sistema de Informes de Conducta
+1. Contexto y Objetivos del Sistema
+Proceso Actual: El sistema se utilizará en la escuela secundaria. Cuando un profesor detecta una mala conducta (ej. vestimenta, disciplina), genera un informe. Dependiendo de la gravedad de la falta y del cronograma, el informe se archiva o se gestiona en el momento, citando a los involucrados.
+Problemas del Sistema Actual: Lentitud en la gestión y falta de agilidad para comunicar rápidamente a quién se debe citar (necesidad de consulta rápida).
+Objetivos del Nuevo Sistema: Agilizar el proceso de reporte, notificar de inmediato a quienes corresponda y mantener un correcto archivo histórico.
+2. Uso Real y Arquitectura del Sistema
+Tipo de Plataforma: Sistema web restringido. No será público; requerirá obligatoriamente inicio de sesión con usuario y contraseña.
+Dispositivos: Indistinto (Computadora/Celular). Para los profesores es más cómodo el uso desde el teléfono móvil.
+Conectividad: La conexión a internet del colegio puede fallar, por lo que se debe considerar un modo offline parcial.
+Concurrencia Estimada (Turno Mañana): Máximo 80 usuarios en simultáneo (~60 profesores, 10 preceptores, 3 miembros del DOE y 7 regentes).
+3. Matriz de Usuarios, Roles y Permisos
+El acceso al sistema se validará mediante cuentas institucionales (cuenta BUE).
+
+
+4. Flujo de un Informe de Conducta
+[Profesor crea Informe] 
+       │
+       ▼
+[Notificación por Mail] ───> (A todas las partes: Padres, Alumno, PAT)
+       │
+       ▼
+[Descargo del Alumno] 
+       │
+       ▼
+[Notificación por Mail] ───> (Aviso al Profesor PAT de que el alumno ya respondió)
+Reglas de Negocio del Informe:
+Estructura del Informe: Debe contar con 3 campos de texto separados para las intervenciones de:
+El Profesor.
+El Regente.
+El PAT (Profesor Acompañante Trayectoria).
+Cancelación/Reversión: Si un informe se crea pero la falta no es grave, el informe queda en suspenso (no se elimina, queda registrado como una "advertencia").
+Citaciones: La gestión de citaciones se realizará de manera manual mediante el envío de correos electrónicos desde el sistema.
+5. Gestión de Datos (Modelo de Base de Datos)
+El sistema contará con dos colecciones o archivos maestros principales: Profesores y Alumnos.
+Datos Obligatorios del Alumno:
+Nombre completo
+DNI
+Curso / División
+Mail de la familia (para notificaciones)
+Otros (Teléfono, legajo, etc.)
+Ciclo de Vida de los Datos:
+Cambio de año: Los alumnos se cambian de curso de forma manual mediante un proceso de matriculación.
+Cierre de año: A fin de año se realiza una limpieza general del sistema.
+Egresados: Se mantiene el historial de los alumnos que egresan del establecimiento.
+Políticas de Retención: Toda la data se borra definitivamente a los 2 años de antigüedad.
+
+Diseñar el Diagrama de Entidad-Relación (DER) para modelar la estructura lógica de los datos que persistirán en el sistema. Debe reflejar fielmente las entidades del negocio, sus atributos esenciales (identificando claves primarias y foráneas) y las relaciones con sus respectivas cardinalidades.
+
+Una aplicación web que centraliza la gestión de informes. Los directivos pueden cargarlos y administrarlos, mientras que padres y alumnos acceden a la información relevante desde un portal y también se les envía por mail.
+Un informe puede tener información dedicada tanto a directivos como a los padres. Puede ser sobre una nueva reunión (jornada EMI) o sobre un cambio en algún área docente (computación, sociales, etc.)
+
+Consultar 
+
+
+Opciones para adminstrar el acceso:
+Tomando en cuenta el atributo cargo, definir en la etapa de desarrollo si tiene accesos para crear/editar directamente el informe.
+Crear un atributo nuevo llamado por ejemplo tiene_acceso que determine si tiene acceso o no a la creacion o edicion ✔
+Orden de prioridad:
+tiene_acceso
+cargo
+
+Se discutieron distintas opciones para administrar el acceso a la creación y edición de informes dentro del sistema. Inicialmente se evaluó utilizar el atributo “cargo” para definir permisos, pero finalmente se decidió agregar un nuevo atributo llamado tiene_acceso, que determinará directamente si un usuario puede crear o editar informes. También se definió un orden de prioridad para los permisos: primero tiene_acceso y luego cargo.
+
+
+Cuando se crea el informe se sigue el flujo de arriba (un informe es hecho por un directivo pero un directivo puede hacer varios informes).
+Una vez que se crea el informe se sigue el flujo de abajo -> uno puede ser editado por varios directivos y muchos informes pueden ser editados por un solo directivo
+
+Agregar fecha de notificación tanto de tutor como de alumno
+Agregar atributo que defina la gravedad del informe (LEVE, GRAVE, MUY GRAVE)
+Agrefar informe de consejo de aula 
+Agregar informe de consejo de convivencia
+Agregar descargo de alumno
+
+Mensajería E.T. 35
+4 de abril de 2026
+Elevator pitch
+Una aplicación web que centraliza la gestión de informes de conducta. Los directivos pueden cargarlos y administrarlos, mientras que padres y alumnos acceden a la información relevante desde un portal y también se les envía por mail.
+Un informe puede tener información dedicada tanto a directivos como a los padres. Contienen información sobre conducta fuera de regla en un estudiante.
+Los distintos roles de acceso serían:
+
+Rol
+Permisos y Acciones
+Profesor / Preceptor
+Creación de informes y visualización según su curso asignado
+Alumno
+Únicamente puede editar y redactar su propio descargo en el informe
+Tutor
+Solo recibe la notificación del informe (no hay permisos de edición)
+Gestores (Rector, Vicerrector, Regentes, Jefe de Taller, Subregente)
+Control total, administración del sistema y gestión/recuperación de contraseñas
+Secretaría
+Puede ver los informes, pero no tiene permisos de edición
+Asesoría Pedagógica / DOE / PAT
+Roles de consulta. Pueden ver e intervenir en el proceso, pero no anotan directamente en el cuerpo del informe original
+
+Cualquier cuenta BUE puede crear/redactar un informe de conducta
+
+Aclaraciones:
+No planeamos la utilización de este sistema para cualquier otra cosa que no sean informes, nuestro objetivo principal es ese, no vamos a trabajar nada por fuera de lo establecido.
+
+Reglas de Negocio del Informe:
+Estructura del Informe: Debe contar con 3 campos de texto separados para las intervenciones de:
+El Profesor.
+El Regente.
+El PAT (Profesor Acompañante Trayectoria).
+Cancelación/Reversión: Si un informe se crea pero la falta no es grave, el informe queda en suspenso (no se elimina, queda registrado como una "advertencia").
+Citaciones: La gestión de citaciones se realizará de manera manual mediante el envío de correos electrónicos desde el sistema.
+5. Gestión de Datos (Modelo de Base de Datos)
+El sistema contará con dos colecciones o archivos maestros principales: Profesores y Alumnos.
+Datos Obligatorios del Alumno:
+Nombre completo
+DNI
+Curso / División
+Mail de la familia (para notificaciones)
+Otros (Teléfono, legajo, etc.)
+Ciclo de Vida de los Datos:
+Cambio de año: Los alumnos cambian de curso de forma manual mediante un proceso de matriculación.
+Cierre de año: A fin de año se realiza una limpieza general del sistema.
+Egresados: Se mantiene el historial de los alumnos que egresan del establecimiento.
+Políticas de Retención: Toda la data se borra definitivamente a los 2 años de antigüedad.
+Plataformas objetivo
+ Navegador web
+
+Desagregación de objetivos
+
+Para facilitar la comunicación y utilización de la app vamos a dividir los procesos de actuación en dos notables, estos serían:
+
+Proceso 1 - Gestión de informes
+Orientado a las acciones de los usuarios, sería el proceso de gestión de informes, donde se crean, editan y redactan los informes, en estos estarían los agentes principales que tengan que ver con la naturaleza del informe. Cabe aclarar que solo tienen acceso a la herramienta de creación y edición aquellos directivos con cuenta “bue.edu.ar”, los que no solo poseen permisos de lectura.
+	Para agentes administrativos, se permite la visualización y consulta de los informes, como intervenciones y actividades dentro del sistema en el caso de los gestores. Estos no tienen relación directa, pero suelen tener control o la posibilidad de visualizarlos.
+
+Proceso 2 - Gestión administrativa
+Este sería el proceso administrativo, acá participan mayormente los agentes gestores, se encargan del control del sistema, autenticaciones de usuarios, verificaciones de informes, chequeos de agentes y organización general de la base de datos. 
+
+
+LISTADO DE ACONTECIMIENTOS - Sistema de Mensajería
+
+Nro
+Agente Externo
+Estímulo (Entrada)
+Respuesta (Salida)
+1
+Directivos
+Crea un nuevo informe de conducta
+1.1 Registro del informe y habilitación de campos
+2
+Directivos
+Los directivos redactan su intervención en su campo específico del informe (Profesor/Preceptor, PAT, Regente)
+2.1 Almacena la información y actualiza el estado del informe
+3
+Tutores/Alumnos
+Alumno redacta su descargo personal dentro del informe
+3.1 Estado actualizado del informe
+4
+Directivos
+Gestiona una citación para los padres desde el sistema
+4.1 Envío de email con los datos de la citación
+
+

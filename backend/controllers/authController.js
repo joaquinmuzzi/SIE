@@ -7,7 +7,7 @@ const generateToken = (id) => {
 };
 
 exports.registerUser = async (req, res) => {
-  const { nombre, email, password, rol, dni, telefono, cargo, tiene_acceso } = req.body;
+  const { nombre, email, password, rol, dni, telefono, cargo, curso, id_padre, tiene_acceso } = req.body;
 
   try {
     const userExists = await User.findOne({ email });
@@ -15,7 +15,15 @@ exports.registerUser = async (req, res) => {
       return res.status(400).json({ message: 'El usuario ya existe' });
     }
 
-    const user = await User.create({ nombre, email, password, rol, dni, telefono, cargo, tiene_acceso });
+    if (dni && !/^\d{7,8}$/.test(dni)) {
+      return res.status(400).json({ message: 'El DNI debe contener entre 7 y 8 digitos' });
+    }
+
+    if ((rol === 'profesor' || rol === 'preceptor') && !email.endsWith('@bue.edu.ar')) {
+      return res.status(400).json({ message: 'El email del profesor/preceptor debe ser @bue.edu.ar' });
+    }
+
+    const user = await User.create({ nombre, email, password, rol, dni, telefono, cargo, curso, id_padre, tiene_acceso });
 
     if (user) {
       res.status(201).json({
@@ -26,6 +34,8 @@ exports.registerUser = async (req, res) => {
         dni: user.dni,
         telefono: user.telefono,
         cargo: user.cargo,
+        curso: user.curso,
+        id_padre: user.id_padre,
         tiene_acceso: user.tiene_acceso,
         token: generateToken(user.id_usuario),
       });
@@ -49,6 +59,8 @@ exports.loginUser = async (req, res) => {
         dni: user.dni,
         telefono: user.telefono,
         cargo: user.cargo,
+        curso: user.curso,
+        id_padre: user.id_padre,
         tiene_acceso: user.tiene_acceso,
         token: generateToken(user.id_usuario),
       });
@@ -63,7 +75,7 @@ exports.loginUser = async (req, res) => {
 exports.getAlumnos = async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT id_usuario AS _id, nombre, email, dni, telefono FROM usuarios WHERE rol = 'alumno'`
+      `SELECT id_usuario AS _id, nombre, email, dni, telefono, curso, id_padre FROM usuarios WHERE rol = 'alumno'`
     );
     res.json(rows);
   } catch (error) {
@@ -74,7 +86,7 @@ exports.getAlumnos = async (req, res) => {
 exports.getUsers = async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT id_usuario AS _id, nombre, email, rol, dni, telefono, cargo, tiene_acceso FROM usuarios`
+      `SELECT id_usuario AS _id, nombre, email, rol, dni, telefono, cargo, curso, id_padre, tiene_acceso FROM usuarios`
     );
     res.json(rows);
   } catch (error) {
