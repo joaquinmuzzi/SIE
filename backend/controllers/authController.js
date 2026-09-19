@@ -7,12 +7,16 @@ const generateToken = (id) => {
 };
 
 exports.registerUser = async (req, res) => {
-  const { nombre, email, password, rol, dni, telefono, cargo, curso, id_padre, tiene_acceso } = req.body;
+  const { nombre, apellido, email, password, rol, dni, telefono, cargo, curso, id_padre, tiene_acceso } = req.body;
 
   try {
     const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({ message: 'El usuario ya existe' });
+    }
+
+    if (!apellido) {
+      return res.status(400).json({ message: 'El apellido es obligatorio' });
     }
 
     if (dni && !/^\d{7,8}$/.test(dni)) {
@@ -23,12 +27,13 @@ exports.registerUser = async (req, res) => {
       return res.status(400).json({ message: 'El email del profesor/preceptor debe ser @bue.edu.ar' });
     }
 
-    const user = await User.create({ nombre, email, password, rol, dni, telefono, cargo, curso, id_padre, tiene_acceso });
+    const user = await User.create({ nombre, apellido, email, password, rol, dni, telefono, cargo, curso, id_padre, tiene_acceso });
 
     if (user) {
       res.status(201).json({
         _id: user.id_usuario,
         nombre: user.nombre,
+        apellido: user.apellido,
         email: user.email,
         rol: user.rol,
         dni: user.dni,
@@ -54,6 +59,7 @@ exports.loginUser = async (req, res) => {
       res.json({
         _id: user.id_usuario,
         nombre: user.nombre,
+        apellido: user.apellido,
         email: user.email,
         rol: user.rol,
         dni: user.dni,
@@ -75,7 +81,7 @@ exports.loginUser = async (req, res) => {
 exports.getAlumnos = async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT id_usuario AS _id, nombre, email, dni, telefono, curso, id_padre FROM usuarios WHERE rol = 'alumno'`
+      `SELECT id_usuario AS _id, nombre, apellido, email, dni, telefono, curso, id_padre FROM usuarios WHERE rol = 'alumno'`
     );
     res.json(rows);
   } catch (error) {
@@ -86,7 +92,7 @@ exports.getAlumnos = async (req, res) => {
 exports.getUsers = async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT id_usuario AS _id, nombre, email, rol, dni, telefono, cargo, curso, id_padre, tiene_acceso FROM usuarios`
+      `SELECT id_usuario AS _id, nombre, apellido, email, rol, dni, telefono, cargo, curso, id_padre, tiene_acceso FROM usuarios`
     );
     res.json(rows);
   } catch (error) {
@@ -97,7 +103,7 @@ exports.getUsers = async (req, res) => {
 exports.getPadres = async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT id_usuario AS _id, nombre, email, dni, telefono FROM usuarios WHERE rol = 'padre' OR rol = 'tutor'`
+      `SELECT id_usuario AS _id, nombre, apellido, email, dni, telefono FROM usuarios WHERE rol = 'padre' OR rol = 'tutor'`
     );
     res.json(rows);
   } catch (error) {
@@ -108,7 +114,7 @@ exports.getPadres = async (req, res) => {
 exports.getAlumnosSinPadre = async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT id_usuario AS _id, nombre, email, dni, curso FROM usuarios WHERE rol = 'alumno' AND id_padre IS NULL`
+      `SELECT id_usuario AS _id, nombre, apellido, email, dni, curso FROM usuarios WHERE rol = 'alumno' AND id_padre IS NULL`
     );
     res.json(rows);
   } catch (error) {

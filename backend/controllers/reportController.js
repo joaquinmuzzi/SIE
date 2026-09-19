@@ -6,13 +6,29 @@ exports.getReports = async (req, res) => {
     let filters = {};
 
     if (rol === 'alumno') {
-      filters.alumno = req.user.id_usuario;
+      filters.alumnoId = req.user.id_usuario;
+      filters.curso = req.user.curso;
     } else if (rol === 'padre' || rol === 'tutor') {
-      filters.padre = req.user.id_usuario;
+      filters.padreId = req.user.id_usuario;
     }
 
-    const reports = await Report.find(filters);
-    res.json(reports);
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.max(parseInt(req.query.limit, 10) || 10, 1);
+    filters.limit = limit;
+    filters.offset = (page - 1) * limit;
+
+    const [reports, total] = await Promise.all([
+      Report.find(filters),
+      Report.count(filters),
+    ]);
+
+    res.json({
+      reports,
+      total,
+      page,
+      limit,
+      totalPages: Math.max(Math.ceil(total / limit), 1),
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -23,11 +39,21 @@ exports.createReport = async (req, res) => {
     titulo, tipo, gravedad,
     texto_profesor, texto_regente, texto_pat,
     id_alumno, id_padre,
+    alcance, curso_destino,
   } = req.body;
 
   try {
-    if (!id_padre) {
-      return res.status(400).json({ message: 'El padre/tutor es obligatorio para crear un informe' });
+    const alcanceFinal = alcance || 'individual';
+    const alcancesValidos = ['individual', 'curso', 'todos'];
+    if (!alcancesValidos.includes(alcanceFinal)) {
+      return res.status(400).json({ message: 'Alcance invalido. Valores permitidos: individual, curso, todos' });
+    }
+
+    if (alcanceFinal === 'individual' && !id_padre) {
+      return res.status(400).json({ message: 'El padre/tutor es obligatorio para crear un informe individual' });
+    }
+    if (alcanceFinal === 'curso' && !curso_destino) {
+      return res.status(400).json({ message: 'El curso destino es obligatorio para un informe de curso' });
     }
 
     const report = await Report.create({
@@ -37,8 +63,10 @@ exports.createReport = async (req, res) => {
       texto_profesor,
       texto_regente,
       texto_pat,
-      id_alumno,
-      id_padre,
+      alcance: alcanceFinal,
+      curso_destino: alcanceFinal === 'curso' ? curso_destino : null,
+      id_alumno: alcanceFinal === 'individual' ? id_alumno : null,
+      id_padre: alcanceFinal === 'individual' ? id_padre : null,
       creado_por_id: req.user.id_usuario,
     });
     res.status(201).json(report);

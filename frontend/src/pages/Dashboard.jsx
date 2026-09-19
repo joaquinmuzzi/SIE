@@ -1,11 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
-import { Plus, Trash2, Edit, MessageSquare, CheckCircle } from 'lucide-react';
+import { jsPDF } from 'jspdf';
+import { Plus, Trash2, Edit, MessageSquare, CheckCircle, Download, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+
+const PAGE_SIZE = 10;
+
+const nombreCompleto = (persona) => {
+  if (!persona) return '';
+  return [persona.nombre, persona.apellido].filter(Boolean).join(' ');
+};
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
   const [reports, setReports] = useState([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [showModal, setShowModal] = useState(false);
   const [showDescargoModal, setShowDescargoModal] = useState(false);
   const [alumnos, setAlumnos] = useState([]);
@@ -13,10 +23,13 @@ const Dashboard = () => {
   const [editingId, setEditingId] = useState(null);
   const [descargoReportId, setDescargoReportId] = useState(null);
   const [descargoText, setDescargoText] = useState('');
+  const [busquedaAlumno, setBusquedaAlumno] = useState('');
   const [formData, setFormData] = useState({
     titulo: '',
     tipo: 'conducta',
     gravedad: 'leve',
+    alcance: 'individual',
+    curso_destino: '',
     texto_profesor: '',
     texto_regente: '',
     texto_pat: '',
@@ -33,18 +46,32 @@ const Dashboard = () => {
   const canEditRegente = ['gestor', 'directivo', 'regente'].includes(user.rol);
   const canEditPat = ['gestor', 'directivo', 'asesoria_pedagogica', 'doe', 'pat'].includes(user.rol);
 
+  const cursosDisponibles = [...new Set(alumnos.map((a) => a.curso).filter(Boolean))].sort();
+
+  const alumnosFiltrados = alumnos.filter((a) => {
+    if (!busquedaAlumno) return true;
+    const term = busquedaAlumno.toLowerCase();
+    return (a.dni || '').includes(busquedaAlumno) || nombreCompleto(a).toLowerCase().includes(term);
+  });
+
   useEffect(() => {
-    fetchReports();
+    fetchReports(page);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
+
+  useEffect(() => {
     if (canCreate) {
       fetchAlumnos();
       fetchPadres();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const fetchReports = async () => {
+  const fetchReports = async (pageToFetch = 1) => {
     try {
-      const { data } = await api.get('/reports');
-      setReports(data);
+      const { data } = await api.get('/reports', { params: { page: pageToFetch, limit: PAGE_SIZE } });
+      setReports(data.reports);
+      setTotalPages(data.totalPages || 1);
     } catch (err) {
       console.error(err);
     }
@@ -70,8 +97,12 @@ const Dashboard = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.id_padre) {
+    if (formData.alcance === 'individual' && !formData.id_padre) {
       alert('El alumno seleccionado no tiene padre/tutor asignado. No se puede crear el informe.');
+      return;
+    }
+    if (formData.alcance === 'curso' && !formData.curso_destino) {
+      alert('Selecciona un curso destino.');
       return;
     }
     try {
@@ -82,7 +113,7 @@ const Dashboard = () => {
       }
       setShowModal(false);
       resetForm();
-      fetchReports();
+      fetchReports(page);
     } catch (err) {
       alert(err.response?.data?.message || 'Error al guardar informe');
     }
@@ -95,7 +126,7 @@ const Dashboard = () => {
       setShowDescargoModal(false);
       setDescargoText('');
       setDescargoReportId(null);
-      fetchReports();
+      fetchReports(page);
     } catch (err) {
       alert('Error al guardar descargo');
     }
@@ -104,14 +135,14 @@ const Dashboard = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Cerrar este informe?')) {
       await api.delete(`/reports/${id}`);
-      fetchReports();
+      fetchReports(page);
     }
   };
 
   const handleChangeState = async (id, nuevoEstado) => {
     try {
       await api.patch(`/reports/${id}/state`, { estado: nuevoEstado });
-      fetchReports();
+      fetchReports(page);
     } catch (err) {
       alert(err.response?.data?.message || 'Error al cambiar estado');
     }
@@ -122,6 +153,8 @@ const Dashboard = () => {
       titulo: report.titulo,
       tipo: report.tipo,
       gravedad: report.gravedad,
+      alcance: report.alcance || 'individual',
+      curso_destino: report.curso_destino || '',
       texto_profesor: report.texto_profesor || '',
       texto_regente: report.texto_regente || '',
       texto_pat: report.texto_pat || '',
@@ -129,6 +162,7 @@ const Dashboard = () => {
       id_padre: report.padre?._id || '',
     });
     setEditingId(report._id);
+    setBusquedaAlumno('');
     setShowModal(true);
   };
 
@@ -143,13 +177,26 @@ const Dashboard = () => {
       titulo: '',
       tipo: 'conducta',
       gravedad: 'leve',
+      alcance: 'individual',
+      curso_destino: '',
       texto_profesor: '',
       texto_regente: '',
       texto_pat: '',
       id_alumno: '',
       id_padre: '',
     });
+    setBusquedaAlumno('');
     setEditingId(null);
+  };
+
+  const handleAlcanceChange = (e) => {
+    setFormData({
+      ...formData,
+      alcance: e.target.value,
+      id_alumno: '',
+      id_padre: '',
+      curso_destino: '',
+    });
   };
 
   const handleAlumnoChange = (e) => {
@@ -162,10 +209,10 @@ const Dashboard = () => {
   const gravedadBadge = (gravedad) => {
     const styles = {
       leve: 'bg-yellow-100 text-yellow-800',
-      grave: 'bg-orange-100 text-orange-800',
-      muy_grave: 'bg-red-100 text-red-800',
+      alta: 'bg-orange-100 text-orange-800',
+      muy_alta: 'bg-red-100 text-red-800',
     };
-    const labels = { leve: 'Leve', grave: 'Grave', muy_grave: 'Muy Grave' };
+    const labels = { leve: 'Leve', alta: 'Alta', muy_alta: 'Muy Alta' };
     return (
       <span className={`text-xs font-bold px-2 py-1 rounded-full ${styles[gravedad] || styles.leve}`}>
         {labels[gravedad] || gravedad}
@@ -191,23 +238,89 @@ const Dashboard = () => {
     const labels = {
       conducta: 'Conducta',
       consejo_aula: 'Consejo de Aula',
-      consejo_convivencia: 'Consejo de Convivencia',
+      consejo_convivencia: 'Consejo Escolar de Convivencia',
     };
     return (
-      <span className="text-xs font-medium px-2 py-1 rounded-full bg-blue-100 text-blue-800">
+      <span className="text-xs font-medium px-2 py-1 rounded-full bg-brand-light text-brand-dark">
         {labels[tipo] || tipo}
       </span>
     );
   };
 
+  const destinatarioTexto = (report) => {
+    if (report.alcance === 'todos') return 'Toda la comunidad';
+    if (report.alcance === 'curso') return `Curso ${report.curso_destino}`;
+    return `Alumno: ${nombreCompleto(report.alumno) || 'Sin asignar'} | Padre: ${nombreCompleto(report.padre) || 'Sin asignar'}`;
+  };
+
+  const downloadPdf = (report) => {
+    const doc = new jsPDF();
+    const marginX = 15;
+    const pageWidth = doc.internal.pageSize.getWidth() - marginX * 2;
+    let y = 20;
+
+    const addLine = (text, size = 11, bold = false) => {
+      doc.setFontSize(size);
+      doc.setFont('helvetica', bold ? 'bold' : 'normal');
+      const lines = doc.splitTextToSize(text, pageWidth);
+      lines.forEach((line) => {
+        if (y > 280) {
+          doc.addPage();
+          y = 20;
+        }
+        doc.text(line, marginX, y);
+        y += size / 2 + 3;
+      });
+      y += 2;
+    };
+
+    addLine('Informe Escolar', 16, true);
+    addLine(report.titulo, 13, true);
+    addLine(`Tipo: ${tipoLabel(report.tipo)}  |  Gravedad: ${gravedadLabel(report.gravedad)}  |  Estado: ${estadoLabel(report.estado)}`);
+    addLine(`Fecha: ${new Date(report.fecha).toLocaleDateString()}`);
+    addLine(`Dirigido a: ${destinatarioTexto(report)}`);
+    addLine(`Creado por: ${nombreCompleto(report.creadoPor)} (${report.creadoPor?.rol || ''})`);
+
+    if (report.texto_profesor) {
+      addLine('Intervencion del Profesor:', 12, true);
+      addLine(report.texto_profesor);
+    }
+    if (report.texto_regente) {
+      addLine('Intervencion del Regente:', 12, true);
+      addLine(report.texto_regente);
+    }
+    if (report.texto_pat) {
+      addLine('Intervencion del PAT:', 12, true);
+      addLine(report.texto_pat);
+    }
+    if (report.descargo_alumno) {
+      addLine('Descargo del Alumno:', 12, true);
+      addLine(report.descargo_alumno);
+    }
+
+    doc.save(`informe-${report._id}.pdf`);
+  };
+
+  const tipoLabel = (tipo) => ({
+    conducta: 'Conducta',
+    consejo_aula: 'Consejo de Aula',
+    consejo_convivencia: 'Consejo Escolar de Convivencia',
+  }[tipo] || tipo);
+
+  const gravedadLabel = (gravedad) => ({ leve: 'Leve', alta: 'Alta', muy_alta: 'Muy Alta' }[gravedad] || gravedad);
+
+  const estadoLabel = (estado) => ({ abierto: 'Abierto', en_revision: 'En Revision', cerrado: 'Cerrado' }[estado] || estado);
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navbar */}
-      <nav className="bg-white shadow-sm p-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold text-blue-600">Panel Escolar</h1>
+      <nav className="bg-white shadow-sm p-4 flex justify-between items-center border-b-4 border-brand">
+        <h1 className="text-xl font-extrabold text-gray-900">
+          Panel <span className="text-brand">Escolar</span>
+        </h1>
         <div className="flex items-center gap-4">
           <span className="text-gray-600 font-medium">
-            Hola, {user.nombre} ({user.rol})
+            Hola, {nombreCompleto(user)} ({user.rol})
           </span>
           <button onClick={logout} className="text-red-500 hover:text-red-700 font-semibold">
             Cerrar Sesion
@@ -221,7 +334,7 @@ const Dashboard = () => {
           {canCreate && (
             <button
               onClick={() => { setShowModal(true); resetForm(); }}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700"
+              className="bg-brand text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-brand-dark font-semibold"
             >
               <Plus size={20} /> Nuevo Informe
             </button>
@@ -243,12 +356,17 @@ const Dashboard = () => {
                       {estadoBadge(report.estado)}
                     </div>
                     <p className="text-sm text-gray-500 mb-4">
-                      Alumno: {report.alumno?.nombre} | Padre: {report.padre?.nombre || 'Sin asignar'} | Fecha: {new Date(report.fecha).toLocaleDateString()}
+                      {destinatarioTexto(report)} | Fecha: {new Date(report.fecha).toLocaleDateString()}
                     </p>
                   </div>
                   <div className="flex gap-2">
+                    {report.estado === 'cerrado' && (
+                      <button onClick={() => downloadPdf(report)} className="text-gray-400 hover:text-brand" title="Descargar PDF">
+                        <Download size={18} />
+                      </button>
+                    )}
                     {canCreate && report.estado !== 'cerrado' && (
-                      <button onClick={() => handleEdit(report)} className="text-gray-400 hover:text-blue-600">
+                      <button onClick={() => handleEdit(report)} className="text-gray-400 hover:text-brand">
                         <Edit size={18} />
                       </button>
                     )}
@@ -307,8 +425,8 @@ const Dashboard = () => {
                 )}
 
                 <div className="mt-4 pt-4 border-t border-gray-50 flex justify-between items-center">
-                  <span className="text-xs text-gray-400">Creado por: {report.creadoPor?.nombre} ({report.creadoPor?.rol})</span>
-                  {isAlumno && report.alumno?._id === user._id && report.estado !== 'cerrado' && (
+                  <span className="text-xs text-gray-400">Creado por: {nombreCompleto(report.creadoPor)} ({report.creadoPor?.rol})</span>
+                  {isAlumno && report.alcance === 'individual' && report.alumno?._id === user._id && report.estado !== 'cerrado' && (
                     <button
                       onClick={() => openDescargo(report)}
                       className="text-orange-600 hover:text-orange-800 text-sm font-semibold flex items-center gap-1"
@@ -322,6 +440,26 @@ const Dashboard = () => {
             ))
           )}
         </div>
+
+        {reports.length > 0 && (
+          <div className="flex justify-center items-center gap-4 mt-8">
+            <button
+              onClick={() => setPage((p) => Math.max(p - 1, 1))}
+              disabled={page <= 1}
+              className="flex items-center gap-1 px-3 py-1.5 rounded border text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed hover:border-brand hover:text-brand"
+            >
+              <ChevronLeft size={16} /> Anterior
+            </button>
+            <span className="text-sm text-gray-500">Pagina {page} de {totalPages}</span>
+            <button
+              onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+              disabled={page >= totalPages}
+              className="flex items-center gap-1 px-3 py-1.5 rounded border text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed hover:border-brand hover:text-brand"
+            >
+              Siguiente <ChevronRight size={16} />
+            </button>
+          </div>
+        )}
       </main>
 
       {/* Modal Crear/Editar Informe */}
@@ -335,7 +473,7 @@ const Dashboard = () => {
                   <label className="block text-sm font-bold mb-1">Titulo</label>
                   <input
                     type="text"
-                    className="w-full p-2 border rounded"
+                    className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand"
                     value={formData.titulo}
                     onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
                     required
@@ -344,13 +482,13 @@ const Dashboard = () => {
                 <div>
                   <label className="block text-sm font-bold mb-1">Tipo</label>
                   <select
-                    className="w-full p-2 border rounded"
+                    className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand"
                     value={formData.tipo}
                     onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
                   >
                     <option value="conducta">Conducta</option>
                     <option value="consejo_aula">Consejo de Aula</option>
-                    <option value="consejo_convivencia">Consejo de Convivencia</option>
+                    <option value="consejo_convivencia">Consejo Escolar de Convivencia</option>
                   </select>
                 </div>
               </div>
@@ -359,49 +497,102 @@ const Dashboard = () => {
                 <div>
                   <label className="block text-sm font-bold mb-1">Gravedad</label>
                   <select
-                    className="w-full p-2 border rounded"
+                    className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand"
                     value={formData.gravedad}
                     onChange={(e) => setFormData({ ...formData, gravedad: e.target.value })}
                   >
                     <option value="leve">Leve</option>
-                    <option value="grave">Grave</option>
-                    <option value="muy_grave">Muy Grave</option>
+                    <option value="alta">Alta</option>
+                    <option value="muy_alta">Muy Alta</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold mb-1">Alumno Afectado</label>
+                  <label className="block text-sm font-bold mb-1">Alcance</label>
                   <select
-                    className="w-full p-2 border rounded"
-                    value={formData.id_alumno}
-                    onChange={handleAlumnoChange}
-                    required
+                    className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand"
+                    value={formData.alcance}
+                    onChange={handleAlcanceChange}
+                    disabled={!!editingId}
                   >
-                    <option value="">Seleccionar...</option>
-                    {alumnos.map((a) => (
-                      <option key={a._id} value={a._id}>{a.nombre} ({a.email})</option>
-                    ))}
+                    <option value="individual">Alumno individual</option>
+                    <option value="curso">Un curso especifico</option>
+                    <option value="todos">Toda la comunidad</option>
                   </select>
                 </div>
               </div>
 
-              <div className="mb-4">
-                <label className="block text-sm font-bold mb-1">Padre / Tutor a Notificar</label>
-                {formData.id_padre ? (
-                  <div className="w-full p-2 border rounded bg-gray-50 text-gray-700">
-                    {padres.find((p) => String(p._id) === String(formData.id_padre))?.nombre || 'Cargando...'}
+              {formData.alcance === 'individual' && (
+                <>
+                  <div className="mb-4">
+                    <label className="block text-sm font-bold mb-1">Buscar Alumno (DNI o nombre)</label>
+                    <div className="relative">
+                      <Search size={16} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="text"
+                        className="w-full p-2 pl-8 border rounded focus:outline-none focus:ring-2 focus:ring-brand"
+                        placeholder="Ej: 40123456"
+                        value={busquedaAlumno}
+                        onChange={(e) => setBusquedaAlumno(e.target.value)}
+                      />
+                    </div>
                   </div>
-                ) : (
-                  <div className="w-full p-2 border rounded bg-red-50 text-red-600 text-sm">
-                    El alumno seleccionado no tiene padre/tutor asignado. Edite el alumno para vincularlo.
+                  <div className="mb-4">
+                    <label className="block text-sm font-bold mb-1">Alumno Afectado</label>
+                    <select
+                      className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand"
+                      value={formData.id_alumno}
+                      onChange={handleAlumnoChange}
+                      required
+                    >
+                      <option value="">Seleccionar...</option>
+                      {alumnosFiltrados.map((a) => (
+                        <option key={a._id} value={a._id}>{nombreCompleto(a)} {a.dni ? `- DNI ${a.dni}` : ''}</option>
+                      ))}
+                    </select>
                   </div>
-                )}
-              </div>
+                  <div className="mb-4">
+                    <label className="block text-sm font-bold mb-1">Padre / Tutor a Notificar</label>
+                    {formData.id_padre ? (
+                      <div className="w-full p-2 border rounded bg-gray-50 text-gray-700">
+                        {nombreCompleto(padres.find((p) => String(p._id) === String(formData.id_padre))) || 'Cargando...'}
+                      </div>
+                    ) : (
+                      <div className="w-full p-2 border rounded bg-red-50 text-red-600 text-sm">
+                        El alumno seleccionado no tiene padre/tutor asignado. Edite el alumno para vincularlo.
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {formData.alcance === 'curso' && (
+                <div className="mb-4">
+                  <label className="block text-sm font-bold mb-1">Curso Destino</label>
+                  <select
+                    className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand"
+                    value={formData.curso_destino}
+                    onChange={(e) => setFormData({ ...formData, curso_destino: e.target.value })}
+                    required
+                  >
+                    <option value="">Seleccionar curso...</option>
+                    {cursosDisponibles.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {formData.alcance === 'todos' && (
+                <div className="mb-4 text-sm text-gray-500 bg-gray-50 border rounded p-3">
+                  Este informe sera visible para todos los alumnos y padres/tutores del sistema.
+                </div>
+              )}
 
               {canEditProfesor && (
                 <div className="mb-4">
                   <label className="block text-sm font-bold mb-1">Texto del Profesor</label>
                   <textarea
-                    className="w-full p-2 border rounded h-24"
+                    className="w-full p-2 border rounded h-24 focus:outline-none focus:ring-2 focus:ring-brand"
                     value={formData.texto_profesor}
                     onChange={(e) => setFormData({ ...formData, texto_profesor: e.target.value })}
                   />
@@ -411,7 +602,7 @@ const Dashboard = () => {
                 <div className="mb-4">
                   <label className="block text-sm font-bold mb-1">Texto del Regente</label>
                   <textarea
-                    className="w-full p-2 border rounded h-24"
+                    className="w-full p-2 border rounded h-24 focus:outline-none focus:ring-2 focus:ring-brand"
                     value={formData.texto_regente}
                     onChange={(e) => setFormData({ ...formData, texto_regente: e.target.value })}
                   />
@@ -421,7 +612,7 @@ const Dashboard = () => {
                 <div className="mb-6">
                   <label className="block text-sm font-bold mb-1">Texto del PAT</label>
                   <textarea
-                    className="w-full p-2 border rounded h-24"
+                    className="w-full p-2 border rounded h-24 focus:outline-none focus:ring-2 focus:ring-brand"
                     value={formData.texto_pat}
                     onChange={(e) => setFormData({ ...formData, texto_pat: e.target.value })}
                   />
@@ -438,7 +629,7 @@ const Dashboard = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  className="px-4 py-2 bg-brand text-white rounded hover:bg-brand-dark font-semibold"
                 >
                   {editingId ? 'Actualizar' : 'Crear'}
                 </button>
@@ -457,7 +648,7 @@ const Dashboard = () => {
               <div className="mb-6">
                 <label className="block text-sm font-bold mb-1">Respuesta / Descargo</label>
                 <textarea
-                  className="w-full p-2 border rounded h-40"
+                  className="w-full p-2 border rounded h-40 focus:outline-none focus:ring-2 focus:ring-brand"
                   placeholder="Escribi tu descargo aqui..."
                   value={descargoText}
                   onChange={(e) => setDescargoText(e.target.value)}

@@ -5,6 +5,7 @@ import api from '../api/axios';
 
 const RegisterPage = () => {
   const [nombre, setNombre] = useState('');
+  const [apellido, setApellido] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rol, setRol] = useState('alumno');
@@ -49,7 +50,7 @@ const RegisterPage = () => {
     }
 
     try {
-      const usuarioCreado = await register(nombre, email, password, rol, dni, telefono, cargo, curso, idPadreSeleccionado);
+      const usuarioCreado = await register(nombre, apellido, email, password, rol, dni, telefono, cargo, curso, idPadreSeleccionado);
 
       if (rol === 'padre' && usuarioCreado && usuarioCreado._id && hijosSeleccionados.length > 0) {
         await api.post('/auth/link-hijos', {
@@ -68,17 +69,27 @@ const RegisterPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-lg shadow-md w-96">
-        <h2 className="text-2xl font-bold mb-6 text-center text-blue-600">Registro</h2>
+      <div className="bg-white p-8 rounded-lg shadow-lg w-96 border-t-4 border-brand">
+        <h2 className="text-2xl font-extrabold mb-6 text-center text-gray-900">Registro</h2>
         {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="block text-gray-700 text-sm font-bold mb-2">Nombre</label>
             <input
               type="text"
-              className="w-full p-2 border rounded focus:outline-blue-500"
+              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
+              required
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-bold mb-2">Apellido</label>
+            <input
+              type="text"
+              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand"
+              value={apellido}
+              onChange={(e) => setApellido(e.target.value)}
               required
             />
           </div>
@@ -86,7 +97,7 @@ const RegisterPage = () => {
             <label className="block text-gray-700 text-sm font-bold mb-2">Email</label>
             <input
               type="email"
-              className="w-full p-2 border rounded focus:outline-blue-500"
+              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -96,7 +107,7 @@ const RegisterPage = () => {
             <label className="block text-gray-700 text-sm font-bold mb-2">Contrasena</label>
             <input
               type="password"
-              className="w-full p-2 border rounded focus:outline-blue-500"
+              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -106,7 +117,7 @@ const RegisterPage = () => {
             <label className="block text-gray-700 text-sm font-bold mb-2">DNI</label>
             <input
               type="text"
-              className="w-full p-2 border rounded focus:outline-blue-500"
+              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand"
               placeholder="7-8 digitos"
               value={dni}
               onChange={(e) => setDni(e.target.value)}
@@ -116,7 +127,7 @@ const RegisterPage = () => {
             <label className="block text-gray-700 text-sm font-bold mb-2">Telefono</label>
             <input
               type="text"
-              className="w-full p-2 border rounded focus:outline-blue-500"
+              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand"
               value={telefono}
               onChange={(e) => setTelefono(e.target.value)}
             />
@@ -124,7 +135,7 @@ const RegisterPage = () => {
           <div className="mb-4">
             <label className="block text-gray-700 text-sm font-bold mb-2">Rol</label>
             <select
-              className="w-full p-2 border rounded focus:outline-blue-500"
+              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand"
               value={rol}
               onChange={(e) => {
                 setRol(e.target.value);
@@ -149,7 +160,7 @@ const RegisterPage = () => {
               <label className="block text-gray-700 text-sm font-bold mb-2">Cargo</label>
               <input
                 type="text"
-                className="w-full p-2 border rounded focus:outline-blue-500"
+                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand"
                 placeholder="Ej: Director, Regente, Rector..."
                 value={cargo}
                 onChange={(e) => setCargo(e.target.value)}
@@ -162,7 +173,7 @@ const RegisterPage = () => {
               <label className="block text-gray-700 text-sm font-bold mb-2">Curso</label>
               <input
                 type="text"
-                className="w-full p-2 border rounded focus:outline-blue-500"
+                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand"
                 placeholder="Ej: 1ro A, 2do B..."
                 value={curso}
                 onChange={(e) => setCurso(e.target.value)}
@@ -174,14 +185,14 @@ const RegisterPage = () => {
             <div className="mb-4">
               <label className="block text-gray-700 text-sm font-bold mb-2">Padre / Tutor *</label>
               <select
-                className="w-full p-2 border rounded focus:outline-blue-500"
+                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand"
                 value={idPadreSeleccionado}
                 onChange={(e) => setIdPadreSeleccionado(e.target.value)}
                 required
               >
                 <option value="">Seleccionar padre/tutor...</option>
                 {padres.map((p) => (
-                  <option key={p._id} value={p._id}>{p.nombre} ({p.email})</option>
+                  <option key={p._id} value={p._id}>{p.nombre} {p.apellido} ({p.email})</option>
                 ))}
               </select>
               {padres.length === 0 && (
@@ -195,12 +206,12 @@ const RegisterPage = () => {
               <label className="block text-gray-700 text-sm font-bold mb-2">Hijos (opcional)</label>
               <select
                 multiple
-                className="w-full p-2 border rounded focus:outline-blue-500 h-32"
+                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand h-32"
                 value={hijosSeleccionados}
                 onChange={(e) => setHijosSeleccionados(Array.from(e.target.selectedOptions, (o) => o.value))}
               >
                 {alumnosSinPadre.map((a) => (
-                  <option key={a._id} value={a._id}>{a.nombre} ({a.email}){a.curso ? ` - ${a.curso}` : ''}</option>
+                  <option key={a._id} value={a._id}>{a.nombre} {a.apellido} ({a.email}){a.curso ? ` - ${a.curso}` : ''}</option>
                 ))}
               </select>
               <p className="text-xs text-gray-400 mt-1">Mantene CTRL/CMD para seleccionar varios. Solo aparecen alumnos sin padre asignado.</p>
@@ -209,13 +220,13 @@ const RegisterPage = () => {
 
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 transition"
+            className="w-full bg-brand text-white p-2 rounded font-semibold hover:bg-brand-dark transition"
           >
             Registrarse
           </button>
         </form>
         <p className="mt-4 text-center text-sm">
-          Ya tienes cuenta? <Link to="/login" className="text-blue-600 hover:underline">Ingresa</Link>
+          Ya tienes cuenta? <Link to="/login" className="text-brand hover:underline">Ingresa</Link>
         </p>
       </div>
     </div>
