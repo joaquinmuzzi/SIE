@@ -1,54 +1,176 @@
-# Sistema de Informes Escolares - MVP
+# SIE · Sistema de Informes Escolares
 
-Este es un proyecto full-stack (MERN) para la gestión de informes escolares.
+Aplicación web para registrar, seguir y comunicar los **informes de conducta** de la Escuela Técnica N° 35. Docentes y preceptores crean los informes, la regencia y el equipo de acompañamiento intervienen en ellos, el alumno presenta su descargo y las familias consultan los informes que les corresponden desde cualquier dispositivo.
 
-## Características
-- **Autenticación:** Registro y login con JWT.
-- **Roles:**
-  - `Directivo`: Puede crear, editar, ver todos y eliminar informes. También puede ver la lista de alumnos.
-  - `Alumno/Padre`: Solo puede ver los informes que le han sido asignados.
-- **Frontend:** React + Tailwind CSS + Lucide Icons.
-- **Backend:** Node.js + Express + MongoDB + Mongoose.
+Proyecto de **Prácticas Profesionalizantes 2026** · 6° 2° Computación.
 
-## Requisitos
-- Node.js instalado.
-- MongoDB instalado y corriendo localmente (o una URI de MongoDB Atlas).
+- **Aplicación:** https://sistemadegestiondeinformes.netlify.app
+- **API:** https://sie-production-014a.up.railway.app
 
-## Instalación y Ejecución
+---
 
-### 1. Configurar el Backend
+## Funcionalidades
+
+- **Acceso por roles** con usuario y contraseña (JWT). Profesores y preceptores se registran con su cuenta `@bue.edu.ar`.
+- **Informes** de tipo *Conducta*, *Consejo de Aula* o *Consejo Escolar de Convivencia*, con gravedad *Leve*, *Alta* o *Muy alta*.
+- **Alcance:** a un alumno (búsqueda por DNI o nombre; el tutor se asigna automáticamente), a un curso o a toda la comunidad.
+- **Tres intervenciones por informe**, cada una en su propio campo: profesor, regente y PAT.
+- **Descargo del alumno** en sus informes individuales mientras el informe no esté cerrado.
+- **Estados:** `abierto` → `en_revision` → `cerrado`. Los informes no se borran: se cierran y quedan como antecedente.
+- **Descarga en PDF** de los informes cerrados.
+- **Paginación** de 10 informes por página.
+- **Vínculo alumno–tutor** al registrarse, para que cada familia vea solo lo que le corresponde.
+
+## Roles
+
+| Rol | Ve | Puede |
+|---|---|---|
+| Profesor / Preceptor | Todos los informes | Crear informes y redactar el texto del profesor |
+| Regente | Todos los informes | Crear, redactar el texto del regente, pasar a revisión y cerrar |
+| Gestor / Directivo | Todos los informes | Control total: editar todos los campos, cambiar estados y cerrar |
+| Asesoría Pedagógica / DOE / PAT | Todos los informes | Consulta |
+| Secretaría | Todos los informes | Consulta |
+| Alumno | Sus informes, los de su curso y los generales | Redactar su descargo |
+| Padre / Tutor | Informes de sus hijos, de sus cursos y los generales | Consulta y descarga en PDF |
+
+## Tecnologías
+
+| Capa | Tecnología | Despliegue |
+|---|---|---|
+| Frontend | React 18, Vite, Tailwind CSS, React Router, Axios, jsPDF, Lucide | Netlify |
+| Backend | Node.js, Express, JSON Web Tokens, bcryptjs | Railway |
+| Base de datos | MySQL (`mysql2`) | Railway |
+
+## Estructura
+
+```
+SIE/
+├── backend/
+│   ├── config/db.js            # Pool de conexión a MySQL
+│   ├── controllers/            # Lógica de autenticación e informes
+│   ├── db/schema.sql           # Creación de tablas
+│   ├── db/migration_v2.sql     # Migración para bases ya desplegadas
+│   ├── middleware/auth.js      # Verificación de JWT y autorización por rol
+│   ├── models/                 # Acceso a datos (User, Report)
+│   ├── routes/                 # /api/auth y /api/reports
+│   └── index.js                # Servidor Express
+└── frontend/
+    └── src/
+        ├── api/axios.js        # Cliente HTTP con el token
+        ├── context/AuthContext.jsx
+        └── pages/              # Login, Registro y Panel (Dashboard)
+```
+
+## Instalación local
+
+**Requisitos:** Node.js 18 o superior y un servidor MySQL 8.
+
+### 1. Base de datos
+
+```sql
+CREATE DATABASE sistema_informes;
+```
+
+Ejecutar `backend/db/schema.sql` sobre esa base. Si la base se creó con una versión anterior, ejecutar una sola vez `backend/db/migration_v2.sql`.
+
+### 2. Backend
+
 ```bash
 cd backend
 npm install
 ```
-Crea un archivo `.env` en la carpeta `backend/` con el siguiente contenido (o usa el que ya está):
+
+Crear `backend/.env`:
+
 ```env
 PORT=5000
-MONGO_URI=mongodb://localhost:27017/sistema-informes
-JWT_SECRET=secreto_super_seguro_123
-NODE_ENV=development
+JWT_SECRET=una_clave_larga_y_secreta
+# Opción A: URL de conexión completa (la que usa Railway)
+MYSQL_DATABASE=mysql://usuario:clave@host:3306/sistema_informes
+# Opción B: sin MYSQL_DATABASE, se conecta a la base "sistema_informes" con estos datos
+# MYSQL_HOST=localhost
+# MYSQL_PORT=3306
+# MYSQL_USER=root
+# MYSQL_PASSWORD=
 ```
-Inicia el servidor:
+
 ```bash
 npm run dev
 ```
 
-### 2. Configurar el Frontend
-Abre otra terminal:
+> El CORS del backend (`backend/index.js`) está configurado para el dominio de Netlify. Para probar en local, agregar `http://localhost:5173` a `origin`.
+
+### 3. Frontend
+
 ```bash
 cd frontend
 npm install
 ```
-Inicia la aplicación:
+
+Crear `frontend/.env`:
+
+```env
+REACT_APP_API_URL=http://localhost:5000/api
+```
+
 ```bash
 npm run dev
 ```
-La aplicación estará disponible en `http://localhost:5173` (o el puerto que indique Vite).
 
-## Estructura de Carpetas
-- `backend/`: API REST, Modelos de datos, Controladores y Middlewares.
-- `frontend/`: Aplicación React, Contexto de Auth, Páginas y consumo de API.
+La aplicación queda en `http://localhost:5173`.
 
-## Notas
-- El primer usuario que registres puede ser un `Directivo` para que puedas empezar a cargar informes.
-- Los informes se asignan a usuarios con rol `alumno` o `padre`.
+## API
+
+| Método | Ruta | Acceso | Descripción |
+|---|---|---|---|
+| POST | `/api/auth/register` | Público | Registro de usuario |
+| POST | `/api/auth/login` | Público | Inicio de sesión, devuelve el token |
+| GET | `/api/auth/alumnos` | Gestor, Directivo, Profesor, Preceptor | Listado de alumnos |
+| GET | `/api/auth/users` | Gestor, Directivo | Listado de usuarios |
+| GET | `/api/auth/padres` | Público | Tutores (para el registro de alumnos) |
+| GET | `/api/auth/alumnos-sin-padre` | Público | Alumnos sin tutor (para el registro de tutores) |
+| POST | `/api/auth/link-hijos` | Autenticado | Vincula alumnos a un tutor |
+| GET | `/api/reports?page=&limit=` | Autenticado | Informes visibles para el usuario, paginados |
+| POST | `/api/reports` | Gestor, Directivo, Profesor, Preceptor, Regente | Crear informe |
+| PUT | `/api/reports/:id` | Autenticado (cada rol edita su campo) | Editar informe |
+| PATCH | `/api/reports/:id/state` | Gestor, Directivo, Regente | Cambiar estado |
+| POST | `/api/reports/:id/descargo` | Alumno del informe | Cargar descargo |
+| DELETE | `/api/reports/:id` | Gestor, Directivo | Cerrar informe (no lo borra) |
+
+## Despliegue
+
+- **Frontend (Netlify):** directorio base `frontend`, comando `npm run build`, carpeta publicada `frontend/dist`, variable `REACT_APP_API_URL` con la URL pública de la API.
+- **Backend (Railway):** directorio `backend`, comando `npm start`, variables `MYSQL_DATABASE` (URL de la base MySQL de Railway) y `JWT_SECRET`.
+
+## Documentación del proyecto
+
+En la carpeta compartida de Google Drive del proyecto:
+
+- Visión del proyecto y visión de la aplicación
+- Diagrama de contexto, listado de acontecimientos y DFD
+- DER (notación Chen e IDEF1X) y diccionario de datos
+- Planificación: objetivos específicos y diagrama de Gantt
+- Manual de usuario y manual de procedimientos
+- Bitácora del proyecto
+
+La gestión de tareas se lleva en ClickUp (espacio *Mensajería E.T. 35*).
+
+## Próximas mejoras
+
+- Notificaciones automáticas por correo a tutor, alumno y PAT.
+- Confirmación de lectura del tutor.
+- Recuperación de contraseña por correo.
+- Alta de roles de conducción habilitada solo por la administración.
+- Edición directa del campo PAT para los roles PAT / DOE.
+- Guardado de borradores sin conexión.
+
+## Equipo
+
+| Integrante | Rol en el proyecto |
+|---|---|
+| Joaquín Muzzi | Líder · datos, backend y despliegue |
+| Felipe Igarzábal | Co-líder · diseño del sistema y modelado de datos |
+| Santino Portaluppi | Procesos, objetivos y lógica del sistema |
+| Kevin Yavi | Diagramas de contexto y acontecimientos, experiencia de usuario |
+
+**Docentes:** Juan Manuel Moya · Aaron Sebastian Serrano — Escuela Técnica N° 35, 2026.
