@@ -18,7 +18,9 @@ Proyecto de **Prácticas Profesionalizantes 2026** · 6° 2° Computación.
 - **Descargo del alumno** en sus informes individuales mientras el informe no esté cerrado.
 - **Estados:** `abierto` → `en_revision` → `cerrado`. Los informes no se borran: se cierran y quedan como antecedente.
 - **Descarga en PDF** de los informes cerrados.
-- **Paginación** de 10 informes por página.
+- **Paginación** de 10 informes por página, con **búsqueda** (título, alumno, DNI o curso), **filtros por estado** y contadores.
+- **Vista de detalle** de cada informe con sus intervenciones, el avance (emitido → descargo → revisión → cerrado) y las acciones según el rol.
+- **Diseño adaptado al celular**: barra inferior y botón para crear informes.
 - **Vínculo alumno–tutor** al registrarse, para que cada familia vea solo lo que le corresponde.
 
 ## Roles
@@ -37,7 +39,7 @@ Proyecto de **Prácticas Profesionalizantes 2026** · 6° 2° Computación.
 
 | Capa | Tecnología | Despliegue |
 |---|---|---|
-| Frontend | React 18, Vite, Tailwind CSS, React Router, Axios, jsPDF, Lucide | Netlify |
+| Frontend | React 18, Vite, Tailwind CSS, React Router, Axios, jsPDF, Lucide (tipografía Nunito) | Netlify |
 | Backend | Node.js, Express, JSON Web Tokens, bcryptjs | Railway |
 | Base de datos | MySQL (`mysql2`) | Railway |
 
@@ -57,6 +59,7 @@ SIE/
 └── frontend/
     └── src/
         ├── api/axios.js        # Cliente HTTP con el token
+        ├── components/         # AppShell, ReportCard, ReportDetail, ReportForm, AuthLayout y ui
         ├── context/AuthContext.jsx
         └── pages/              # Login, Registro y Panel (Dashboard)
 ```
@@ -131,7 +134,7 @@ La aplicación queda en `http://localhost:5173`.
 | GET | `/api/auth/padres` | Público | Tutores (para el registro de alumnos) |
 | GET | `/api/auth/alumnos-sin-padre` | Público | Alumnos sin tutor (para el registro de tutores) |
 | POST | `/api/auth/link-hijos` | El propio tutor, Gestor o Directivo | Vincula alumnos a un tutor |
-| GET | `/api/reports?page=&limit=` | Autenticado | Informes visibles para el usuario, paginados |
+| GET | `/api/reports?page=&limit=&estado=&q=` | Autenticado | Informes visibles para el usuario, paginados, con filtro por estado, búsqueda y cantidad por estado (`counts`) |
 | POST | `/api/reports` | Gestor, Directivo, Profesor, Preceptor, Regente | Crear informe |
 | PUT | `/api/reports/:id` | Cada rol edita su propio campo; docentes solo en sus informes | Editar informe (no si está cerrado) |
 | PATCH | `/api/reports/:id/state` | Gestor, Directivo, Regente | Cambiar estado |

@@ -12,14 +12,23 @@ exports.getReports = async (req, res) => {
       filters.padreId = req.user.id_usuario;
     }
 
+    if (['abierto', 'en_revision', 'cerrado'].includes(req.query.estado)) {
+      filters.estado = req.query.estado;
+    }
+    const q = String(req.query.q || '').trim().slice(0, 100);
+    if (q) {
+      filters.q = q;
+    }
+
     const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
     const limit = Math.max(parseInt(req.query.limit, 10) || 10, 1);
     filters.limit = limit;
     filters.offset = (page - 1) * limit;
 
-    const [reports, total] = await Promise.all([
+    const [reports, total, counts] = await Promise.all([
       Report.find(filters),
       Report.count(filters),
+      Report.countByEstado(filters),
     ]);
 
     res.json({
@@ -28,6 +37,7 @@ exports.getReports = async (req, res) => {
       page,
       limit,
       totalPages: Math.max(Math.ceil(total / limit), 1),
+      counts,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

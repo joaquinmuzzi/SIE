@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../api/axios';
+import AuthLayout, { BOTON_AUTH, ENTRADA_AUTH, ERROR_AUTH, ETIQUETA_AUTH } from '../components/AuthLayout';
 
 const RegisterPage = () => {
   const [nombre, setNombre] = useState('');
@@ -67,169 +68,90 @@ const RegisterPage = () => {
 
   const rolesConCargo = ['gestor', 'directivo', 'regente'];
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-96 border-t-4 border-brand">
-        <h2 className="text-2xl font-extrabold mb-6 text-center text-gray-900">Registro</h2>
-        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2">Nombre</label>
-            <input
-              type="text"
-              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand"
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2">Apellido</label>
-            <input
-              type="text"
-              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand"
-              value={apellido}
-              onChange={(e) => setApellido(e.target.value)}
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2">Email</label>
-            <input
-              type="email"
-              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2">Contrasena</label>
-            <input
-              type="password"
-              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2">DNI</label>
-            <input
-              type="text"
-              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand"
-              placeholder="7-8 digitos"
-              value={dni}
-              onChange={(e) => setDni(e.target.value)}
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2">Telefono</label>
-            <input
-              type="text"
-              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand"
-              value={telefono}
-              onChange={(e) => setTelefono(e.target.value)}
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2">Rol</label>
-            <select
-              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand"
-              value={rol}
-              onChange={(e) => {
-                setRol(e.target.value);
-                setIdPadreSeleccionado('');
-                setHijosSeleccionados([]);
-              }}
-            >
-              <option value="alumno">Alumno</option>
-              <option value="padre">Padre / Tutor</option>
-              <option value="profesor">Profesor</option>
-              <option value="preceptor">Preceptor</option>
-              <option value="regente">Regente</option>
-              <option value="gestor">Gestor (Rector, Vicerrector, etc.)</option>
-              <option value="directivo">Directivo</option>
-              <option value="secretaria">Secretaria</option>
-              <option value="asesoria_pedagogica">Asesoria Pedagogica / DOE / PAT</option>
-            </select>
-          </div>
-
-          {rolesConCargo.includes(rol) && (
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2">Cargo</label>
-              <input
-                type="text"
-                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand"
-                placeholder="Ej: Director, Regente, Rector..."
-                value={cargo}
-                onChange={(e) => setCargo(e.target.value)}
-              />
-            </div>
-          )}
-
-          {rol === 'alumno' && (
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2">Curso</label>
-              <input
-                type="text"
-                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand"
-                placeholder="Ej: 1ro A, 2do B..."
-                value={curso}
-                onChange={(e) => setCurso(e.target.value)}
-              />
-            </div>
-          )}
-
-          {rol === 'alumno' && (
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2">Padre / Tutor *</label>
-              <select
-                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand"
-                value={idPadreSeleccionado}
-                onChange={(e) => setIdPadreSeleccionado(e.target.value)}
-                required
-              >
-                <option value="">Seleccionar padre/tutor...</option>
-                {padres.map((p) => (
-                  <option key={p._id} value={p._id}>{p.nombre} {p.apellido} ({p.email})</option>
-                ))}
-              </select>
-              {padres.length === 0 && (
-                <p className="text-xs text-gray-400 mt-1">No hay padres/tutores registrados aun</p>
-              )}
-            </div>
-          )}
-
-          {rol === 'padre' && (
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2">Hijos (opcional)</label>
-              <select
-                multiple
-                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand h-32"
-                value={hijosSeleccionados}
-                onChange={(e) => setHijosSeleccionados(Array.from(e.target.selectedOptions, (o) => o.value))}
-              >
-                {alumnosSinPadre.map((a) => (
-                  <option key={a._id} value={a._id}>{a.nombre} {a.apellido} ({a.email}){a.curso ? ` - ${a.curso}` : ''}</option>
-                ))}
-              </select>
-              <p className="text-xs text-gray-400 mt-1">Mantene CTRL/CMD para seleccionar varios. Solo aparecen alumnos sin padre asignado.</p>
-            </div>
-          )}
-
-          <button
-            type="submit"
-            className="w-full bg-brand text-white p-2 rounded font-semibold hover:bg-brand-dark transition"
-          >
-            Registrarse
-          </button>
-        </form>
-        <p className="mt-4 text-center text-sm">
-          Ya tienes cuenta? <Link to="/login" className="text-brand hover:underline">Ingresa</Link>
-        </p>
-      </div>
+  const campo = (label, value, setter, props = {}) => (
+    <div>
+      <label className={ETIQUETA_AUTH}>{label}</label>
+      <input className={ENTRADA_AUTH} value={value} onChange={(e) => setter(e.target.value)} {...props} />
     </div>
+  );
+
+  return (
+    <AuthLayout titulo="Crear cuenta" subtitulo="Registrate para acceder a los informes" ancho="max-w-lg">
+      {error && <p className={ERROR_AUTH}>{error}</p>}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid sm:grid-cols-2 gap-4">
+          {campo('Nombre', nombre, setNombre, { type: 'text', required: true })}
+          {campo('Apellido', apellido, setApellido, { type: 'text', required: true })}
+        </div>
+        {campo('Email', email, setEmail, { type: 'email', required: true })}
+        {campo('Contraseña', password, setPassword, { type: 'password', required: true })}
+        <div className="grid sm:grid-cols-2 gap-4">
+          {campo('DNI', dni, setDni, { type: 'text', placeholder: '7-8 dígitos' })}
+          {campo('Teléfono', telefono, setTelefono, { type: 'text' })}
+        </div>
+        <div>
+          <label className={ETIQUETA_AUTH}>Rol</label>
+          <select
+            className={ENTRADA_AUTH}
+            value={rol}
+            onChange={(e) => {
+              setRol(e.target.value);
+              setIdPadreSeleccionado('');
+              setHijosSeleccionados([]);
+            }}
+          >
+            <option value="alumno">Alumno</option>
+            <option value="padre">Padre / Tutor</option>
+            <option value="profesor">Profesor</option>
+            <option value="preceptor">Preceptor</option>
+            <option value="regente">Regente</option>
+            <option value="gestor">Gestor (Rector, Vicerrector, etc.)</option>
+            <option value="directivo">Directivo</option>
+            <option value="secretaria">Secretaria</option>
+            <option value="asesoria_pedagogica">Asesoria Pedagogica / DOE / PAT</option>
+          </select>
+        </div>
+
+        {rolesConCargo.includes(rol) && campo('Cargo', cargo, setCargo, { type: 'text', placeholder: 'Ej: Director, Regente, Rector...' })}
+
+        {rol === 'alumno' && campo('Curso', curso, setCurso, { type: 'text', placeholder: 'Ej: 6° 2°' })}
+
+        {rol === 'alumno' && (
+          <div>
+            <label className={ETIQUETA_AUTH}>Padre / Tutor *</label>
+            <select className={ENTRADA_AUTH} value={idPadreSeleccionado} onChange={(e) => setIdPadreSeleccionado(e.target.value)} required>
+              <option value="">Seleccionar padre/tutor...</option>
+              {padres.map((p) => (
+                <option key={p._id} value={p._id}>{p.nombre} {p.apellido} ({p.email})</option>
+              ))}
+            </select>
+            {padres.length === 0 && <p className="text-xs font-semibold text-slate-400 mt-1">No hay padres/tutores registrados aún</p>}
+          </div>
+        )}
+
+        {rol === 'padre' && (
+          <div>
+            <label className={ETIQUETA_AUTH}>Hijos (opcional)</label>
+            <select
+              multiple
+              className={`${ENTRADA_AUTH} h-32`}
+              value={hijosSeleccionados}
+              onChange={(e) => setHijosSeleccionados(Array.from(e.target.selectedOptions, (o) => o.value))}
+            >
+              {alumnosSinPadre.map((a) => (
+                <option key={a._id} value={a._id}>{a.nombre} {a.apellido} ({a.email}){a.curso ? ` - ${a.curso}` : ''}</option>
+              ))}
+            </select>
+            <p className="text-xs font-semibold text-slate-400 mt-1">Mantené CTRL para seleccionar varios. Solo aparecen alumnos sin padre asignado.</p>
+          </div>
+        )}
+
+        <button type="submit" className={`${BOTON_AUTH} !mt-6`}>Registrarse</button>
+      </form>
+      <p className="text-sm font-semibold text-slate-500 mt-5 text-center">
+        ¿Ya tenés cuenta? <Link to="/login" className="text-brand font-extrabold hover:underline">Ingresá</Link>
+      </p>
+    </AuthLayout>
   );
 };
 

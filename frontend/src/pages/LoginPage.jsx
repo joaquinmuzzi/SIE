@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
+import { Lock, Mail } from 'lucide-react';
+import AuthLayout, { BOTON_AUTH, ENTRADA_AUTH, ERROR_AUTH, ETIQUETA_AUTH } from '../components/AuthLayout';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -20,45 +22,25 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-96 border-t-4 border-brand">
-        <h2 className="text-2xl font-extrabold mb-6 text-center text-gray-900">
-          Sistema de Informes <span className="text-brand">Escolares</span>
-        </h2>
-        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2">Email</label>
-            <input
-              type="email"
-              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div className="mb-6">
-            <label className="block text-gray-700 text-sm font-bold mb-2">Contraseña</label>
-            <input
-              type="password"
-              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full bg-brand text-white p-2 rounded font-semibold hover:bg-brand-dark transition"
-          >
-            Ingresar
-          </button>
-        </form>
-        <p className="mt-4 text-center text-sm">
-          ¿No tienes cuenta? <Link to="/register" className="text-brand hover:underline">Regístrate</Link>
-        </p>
-      </div>
-    </div>
+    <AuthLayout titulo="Iniciar sesión" subtitulo="Informes de la Escuela Técnica N° 35">
+      {error && <p className={ERROR_AUTH}>{error}</p>}
+      <form onSubmit={handleSubmit}>
+        <label className={ETIQUETA_AUTH}>Email</label>
+        <div className="relative mb-4">
+          <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input type="email" className={`${ENTRADA_AUTH} pl-10`} value={email} onChange={(e) => setEmail(e.target.value)} required />
+        </div>
+        <label className={ETIQUETA_AUTH}>Contraseña</label>
+        <div className="relative mb-6">
+          <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input type="password" className={`${ENTRADA_AUTH} pl-10`} value={password} onChange={(e) => setPassword(e.target.value)} required />
+        </div>
+        <button type="submit" className={BOTON_AUTH}>Ingresar</button>
+      </form>
+      <p className="text-sm font-semibold text-slate-500 mt-5 text-center">
+        ¿No tenés cuenta? <Link to="/register" className="text-brand font-extrabold hover:underline">Registrate</Link>
+      </p>
+    </AuthLayout>
   );
 };
 

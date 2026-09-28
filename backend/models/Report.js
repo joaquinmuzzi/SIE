@@ -20,6 +20,7 @@ const baseSelect = `
     al.nombre           AS "alumno.nombre",
     al.apellido         AS "alumno.apellido",
     al.email            AS "alumno.email",
+    al.curso            AS "alumno.curso",
     pa.id_usuario       AS "padre._id",
     pa.nombre           AS "padre.nombre",
     pa.apellido         AS "padre.apellido",
@@ -67,6 +68,15 @@ function buildWhere(filters) {
     andParams.push(filters.estado);
   }
 
+  // Busqueda libre por titulo, alumno (nombre, apellido o DNI) o curso
+  if (filters && filters.q) {
+    const like = `%${filters.q}%`;
+    andConditions.push(
+      '(i.titulo LIKE ? OR al.nombre LIKE ? OR al.apellido LIKE ? OR al.dni LIKE ? OR al.curso LIKE ? OR i.curso_destino LIKE ?)'
+    );
+    andParams.push(like, like, like, like, like, like);
+  }
+
   const where = andConditions.length ? ` WHERE ${andConditions.join(' AND ')}` : '';
   return { where, params: andParams };
 }
@@ -77,6 +87,7 @@ function nestPopulated(row) {
     nombre: row['alumno.nombre'],
     apellido: row['alumno.apellido'],
     email: row['alumno.email'],
+    curso: row['alumno.curso'],
   };
   const padre = {
     _id: row['padre._id'],
@@ -127,8 +138,23 @@ const Report = {
 
   async count(filters) {
     const { where, params } = buildWhere(filters);
-    const [rows] = await pool.query(`SELECT COUNT(*) AS total FROM informes i${where}`, params);
+    const [rows] = await pool.query(
+      `SELECT COUNT(*) AS total FROM informes i LEFT JOIN usuarios al ON i.id_alumno = al.id_usuario${where}`,
+      params
+    );
     return rows[0].total;
+  },
+
+  // Cantidad de informes visibles por estado (ignora el filtro de estado y la busqueda)
+  async countByEstado(filters) {
+    const { where, params } = buildWhere({ ...filters, estado: undefined, q: undefined });
+    const [rows] = await pool.query(
+      `SELECT i.estado, COUNT(*) AS total FROM informes i LEFT JOIN usuarios al ON i.id_alumno = al.id_usuario${where} GROUP BY i.estado`,
+      params
+    );
+    const counts = { abierto: 0, en_revision: 0, cerrado: 0 };
+    rows.forEach((r) => { counts[r.estado] = r.total; });
+    return counts;
   },
 
   async findById(id) {
