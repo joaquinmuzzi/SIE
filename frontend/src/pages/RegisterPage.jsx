@@ -125,7 +125,7 @@ const RegisterPage = () => {
                 <option key={p._id} value={p._id}>{p.nombre} {p.apellido} ({p.email})</option>
               ))}
             </select>
-            {padres.length === 0 && <p className="text-xs font-semibold text-slate-400 mt-1">No hay padres/tutores registrados aún</p>}
+            {padres.length === 0 && <p className="text-xs font-normal text-slate-400 mt-1">No hay padres/tutores registrados aún</p>}
           </div>
         )}
 
@@ -142,14 +142,14 @@ const RegisterPage = () => {
                 <option key={a._id} value={a._id}>{a.nombre} {a.apellido} ({a.email}){a.curso ? ` - ${a.curso}` : ''}</option>
               ))}
             </select>
-            <p className="text-xs font-semibold text-slate-400 mt-1">Mantené CTRL para seleccionar varios. Solo aparecen alumnos sin padre asignado.</p>
+            <p className="text-xs font-normal text-slate-400 mt-1">Mantené CTRL para seleccionar varios. Solo aparecen alumnos sin padre asignado.</p>
           </div>
         )}
 
         <button type="submit" className={`${BOTON_AUTH} !mt-6`}>Registrarse</button>
       </form>
-      <p className="text-sm font-semibold text-slate-500 mt-5 text-center">
-        ¿Ya tenés cuenta? <Link to="/login" className="text-brand font-extrabold hover:underline">Ingresá</Link>
+      <p className="text-sm font-normal text-slate-500 mt-5 text-center">
+        ¿Ya tenés cuenta? <Link to="/login" className="text-brand font-semibold hover:underline">Ingresá</Link>
       </p>
     </AuthLayout>
   );

@@ -34,27 +34,36 @@ export const TIPOS = {
 export const GRAVEDADES = { leve: 'Leve', alta: 'Alta', muy_alta: 'Muy alta' };
 export const ESTADOS = { abierto: 'Abierto', en_revision: 'En revisión', cerrado: 'Cerrado' };
 
-const GRAVEDAD_ESTILO = {
-  leve: 'bg-amber-50 text-amber-800 ring-amber-200',
-  alta: 'bg-orange-50 text-orange-800 ring-orange-200',
+// Tonos apagados; el rojo queda reservado para la gravedad "Muy alta"
+export const GRAVEDAD_ESTILO = {
+  leve: 'bg-slate-50 text-slate-600 ring-slate-200',
+  alta: 'bg-amber-50 text-amber-800 ring-amber-200',
   muy_alta: 'bg-red-50 text-red-800 ring-red-200',
 };
 const ESTADO_ESTILO = {
-  abierto: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-  en_revision: 'bg-sky-50 text-sky-700 ring-sky-200',
+  abierto: 'bg-teal-50 text-teal-800 ring-teal-200',
+  en_revision: 'bg-indigo-50 text-indigo-700 ring-indigo-200',
   cerrado: 'bg-slate-100 text-slate-500 ring-slate-200',
 };
 
 export const Chip = ({ className = 'bg-white text-slate-500 ring-slate-200', children }) => (
-  <span className={`inline-flex items-center whitespace-nowrap rounded-sm px-2 py-0.5 text-xs font-bold ring-1 ring-inset ${className}`}>
+  <span className={`inline-flex items-center whitespace-nowrap rounded-sm px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${className}`}>
     {children}
   </span>
 );
 
+export const ChipGravedad = ({ report }) => (
+  <Chip className={GRAVEDAD_ESTILO[report.gravedad] || GRAVEDAD_ESTILO.leve}>{GRAVEDADES[report.gravedad] || report.gravedad}</Chip>
+);
+
+export const ChipEstado = ({ report }) => (
+  <Chip className={ESTADO_ESTILO[report.estado] || ESTADO_ESTILO.abierto}>{ESTADOS[report.estado] || report.estado}</Chip>
+);
+
 export const Etiquetas = ({ report }) => (
   <div className="flex flex-wrap gap-1.5">
-    <Chip className={GRAVEDAD_ESTILO[report.gravedad] || GRAVEDAD_ESTILO.leve}>{GRAVEDADES[report.gravedad] || report.gravedad}</Chip>
-    <Chip className={ESTADO_ESTILO[report.estado] || ESTADO_ESTILO.abierto}>{ESTADOS[report.estado] || report.estado}</Chip>
+    <ChipGravedad report={report} />
+    <ChipEstado report={report} />
     <Chip>{TIPOS[report.tipo] || report.tipo}</Chip>
   </div>
 );
@@ -68,7 +77,7 @@ export const destinatario = (report) => {
 
 export const Avatar = ({ report, size = 'w-11 h-11' }) =>
   report.alcance === 'individual' ? (
-    <div className={`${size} shrink-0 rounded-sm bg-slate-800 text-white grid place-items-center font-black`}>
+    <div className={`${size} shrink-0 rounded-sm bg-slate-700 text-white grid place-items-center font-semibold`}>
       {iniciales(report.alumno) || '?'}
     </div>
   ) : (
@@ -94,7 +103,7 @@ export const etapaActual = (report) => {
 export const BarraAvance = ({ report }) => (
   <div className="flex gap-1">
     {etapas(report).map((e, k) => (
-      <span key={e} className={`h-1.5 flex-1 rounded-none ${k < etapaActual(report) ? 'bg-brand' : 'bg-slate-200'}`} />
+      <span key={e} className={`h-1 flex-1 ${k < etapaActual(report) ? 'bg-slate-700' : 'bg-slate-200'}`} />
     ))}
   </div>
 );

@@ -37,8 +37,8 @@ const LoginPage = () => {
         </div>
         <button type="submit" className={BOTON_AUTH}>Ingresar</button>
       </form>
-      <p className="text-sm font-semibold text-slate-500 mt-5 text-center">
-        ¿No tenés cuenta? <Link to="/register" className="text-brand font-extrabold hover:underline">Registrate</Link>
+      <p className="text-sm font-normal text-slate-500 mt-5 text-center">
+        ¿No tenés cuenta? <Link to="/register" className="text-brand font-semibold hover:underline">Registrate</Link>
       </p>
     </AuthLayout>
   );

@@ -1,6 +1,21 @@
 import { ChevronRight } from 'lucide-react';
-import { Avatar, BarraAvance, Etiquetas, destinatario, etapaActual, etapas, fechaCorta, intervenciones } from './ui';
+import { Avatar, BarraAvance, ChipEstado, ChipGravedad, TIPOS, destinatario, fechaCorta, intervenciones } from './ui';
 
+// Columnas compartidas por el encabezado de la lista y cada fila (desde tablet)
+export const COLUMNAS = 'md:grid md:grid-cols-[minmax(0,12rem)_minmax(0,1fr)_5.5rem_7.5rem_5.5rem_1rem] md:items-center md:gap-5';
+
+export const EncabezadoLista = () => (
+  <div className={`hidden ${COLUMNAS} px-5 py-2.5 bg-slate-50 border-b border-slate-200 text-xs font-medium uppercase tracking-wide text-slate-500`}>
+    <span>Destinatario</span>
+    <span>Informe</span>
+    <span>Gravedad</span>
+    <span>Estado</span>
+    <span>Fecha</span>
+    <span />
+  </div>
+);
+
+// Fila de la lista de informes: a todo el ancho en compu, apilada en celular
 const ReportCard = ({ report, onOpen }) => {
   const n = intervenciones(report).length;
   const curso = report.alcance === 'individual' ? report.alumno?.curso : null;
@@ -8,28 +23,36 @@ const ReportCard = ({ report, onOpen }) => {
   return (
     <article
       onClick={() => onOpen(report)}
-      className={`bg-white rounded border border-slate-200 p-5 cursor-pointer hover:border-slate-400 transition ${report.estado === 'cerrado' ? 'opacity-60' : ''}`}
+      className={`${COLUMNAS} flex flex-col gap-3 px-5 py-4 cursor-pointer hover:bg-slate-50 transition`}
     >
-      <div className="flex items-center gap-3">
-        <Avatar report={report} />
+      <div className="flex items-center gap-3 min-w-0">
+        <Avatar report={report} size="w-9 h-9 text-sm" />
         <div className="min-w-0 flex-1">
-          <p className="font-extrabold text-slate-900 truncate">{destinatario(report)}</p>
-          <p className="text-sm font-semibold text-slate-400">{[curso, fechaCorta(report.fecha)].filter(Boolean).join(' · ')}</p>
+          <p className="font-medium text-slate-900 truncate">{destinatario(report)}</p>
+          {curso && <p className="text-xs text-slate-500">{curso}</p>}
         </div>
-        <span className="w-9 h-9 shrink-0 rounded-sm bg-slate-100 grid place-items-center text-slate-500">
-          <ChevronRight size={18} />
-        </span>
+        <span className="md:hidden text-xs text-slate-500">{fechaCorta(report.fecha)}</span>
       </div>
-      <h3 className="font-extrabold text-lg leading-snug mt-4 text-slate-900">{report.titulo}</h3>
-      <div className="mt-3">
-        <Etiquetas report={report} />
-      </div>
-      <div className="mt-4">
-        <BarraAvance report={report} />
-        <p className="text-xs font-bold text-slate-400 mt-1.5">
-          {etapas(report)[etapaActual(report) - 1]} · {n} {n === 1 ? 'intervención' : 'intervenciones'}
+
+      <div className="min-w-0">
+        <h3 className="font-semibold text-slate-900 leading-snug line-clamp-2">{report.titulo}</h3>
+        <p className="text-xs text-slate-500 mt-0.5">
+          {TIPOS[report.tipo] || report.tipo} · {n} {n === 1 ? 'intervención' : 'intervenciones'}
         </p>
       </div>
+
+      <div className="flex md:block gap-1.5 flex-wrap">
+        <ChipGravedad report={report} />
+        <span className="md:hidden"><ChipEstado report={report} /></span>
+      </div>
+
+      <div className="space-y-1.5">
+        <span className="hidden md:inline-flex"><ChipEstado report={report} /></span>
+        <BarraAvance report={report} />
+      </div>
+
+      <span className="hidden md:block text-sm text-slate-500">{fechaCorta(report.fecha)}</span>
+      <ChevronRight size={16} className="hidden md:block text-slate-400" />
     </article>
   );
 };

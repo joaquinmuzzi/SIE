@@ -39,7 +39,7 @@ Proyecto de **Prácticas Profesionalizantes 2026** · 6° 2° Computación.
 
 | Capa | Tecnología | Despliegue |
 |---|---|---|
-| Frontend | React 18, Vite, Tailwind CSS, React Router, Axios, jsPDF, Lucide (tipografía Nunito) | Netlify |
+| Frontend | React 18, Vite, Tailwind CSS, React Router, Axios, jsPDF, Lucide (tipografía IBM Plex Sans) | Netlify |
 | Backend | Node.js, Express, JSON Web Tokens, bcryptjs | Railway |
 | Base de datos | MySQL (`mysql2`) | Railway |
 
