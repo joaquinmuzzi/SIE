@@ -1,16 +1,20 @@
+require('dotenv').config();
 const express = require('express');
-const dotenv = require('dotenv');
 const cors = require('cors');
 const { connectDB } = require('./config/db');
 
-dotenv.config();
 connectDB();
 
 const app = express();
 
+// Origenes permitidos separados por coma (ej. CORS_ORIGIN=http://localhost:5173 en desarrollo)
+const allowedOrigins = (process.env.CORS_ORIGIN || 'https://sistemadegestiondeinformes.netlify.app')
+  .split(',')
+  .map((o) => o.trim());
+
 app.use(cors({
-  origin: 'https://sistemadegestiondeinformes.netlify.app',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  origin: allowedOrigins,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   credentials: true,
 }));
 app.use(express.json());
