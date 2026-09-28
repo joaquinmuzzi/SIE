@@ -46,7 +46,7 @@ const ESTADO_ESTILO = {
 };
 
 export const Chip = ({ className = 'bg-white text-slate-500 ring-slate-200', children }) => (
-  <span className={`inline-flex items-center whitespace-nowrap rounded px-2 py-0.5 text-xs font-bold ring-1 ring-inset ${className}`}>
+  <span className={`inline-flex items-center whitespace-nowrap rounded-sm px-2 py-0.5 text-xs font-bold ring-1 ring-inset ${className}`}>
     {children}
   </span>
 );
@@ -68,11 +68,11 @@ export const destinatario = (report) => {
 
 export const Avatar = ({ report, size = 'w-11 h-11' }) =>
   report.alcance === 'individual' ? (
-    <div className={`${size} shrink-0 rounded-md bg-slate-800 text-white grid place-items-center font-black`}>
+    <div className={`${size} shrink-0 rounded-sm bg-slate-800 text-white grid place-items-center font-black`}>
       {iniciales(report.alumno) || '?'}
     </div>
   ) : (
-    <div className={`${size} shrink-0 rounded-md bg-slate-200 text-slate-600 grid place-items-center`}>
+    <div className={`${size} shrink-0 rounded-sm bg-slate-200 text-slate-600 grid place-items-center`}>
       <Users size={18} />
     </div>
   );
@@ -94,7 +94,7 @@ export const etapaActual = (report) => {
 export const BarraAvance = ({ report }) => (
   <div className="flex gap-1">
     {etapas(report).map((e, k) => (
-      <span key={e} className={`h-1.5 flex-1 rounded-sm ${k < etapaActual(report) ? 'bg-brand' : 'bg-slate-200'}`} />
+      <span key={e} className={`h-1.5 flex-1 rounded-none ${k < etapaActual(report) ? 'bg-brand' : 'bg-slate-200'}`} />
     ))}
   </div>
 );

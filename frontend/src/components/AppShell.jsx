@@ -2,7 +2,7 @@ import { Inbox, LogOut, Plus } from 'lucide-react';
 import { ROLES, iniciales, nombreCompleto } from './ui';
 
 const Contador = ({ n, texto, color }) => (
-  <div className="bg-white/5 rounded-md py-3">
+  <div className="bg-white/5 rounded-sm py-3">
     <p className={`text-2xl font-black ${color}`}>{n}</p>
     <p className="text-[11px] font-bold text-slate-400">{texto}</p>
   </div>
@@ -15,9 +15,9 @@ const AppShell = ({ user, counts, canCreate, onNuevo, onInicio, onLogout, childr
   return (
     <div className="min-h-screen lg:flex lg:max-w-6xl lg:mx-auto lg:gap-8 lg:p-8">
       <aside className="hidden lg:block w-72 shrink-0">
-        <div className="bg-slate-900 text-slate-300 rounded-lg p-6 sticky top-8">
+        <div className="bg-slate-900 text-slate-300 rounded p-6 sticky top-8">
           <div className="flex items-center gap-3">
-            <div className="w-14 h-14 shrink-0 rounded-md bg-brand text-white grid place-items-center text-xl font-black">
+            <div className="w-14 h-14 shrink-0 rounded-sm bg-brand text-white grid place-items-center text-xl font-black">
               {iniciales(user)}
             </div>
             <div className="min-w-0">
@@ -33,21 +33,21 @@ const AppShell = ({ user, counts, canCreate, onNuevo, onInicio, onLogout, childr
           {canCreate && (
             <button
               onClick={onNuevo}
-              className="w-full mt-6 bg-brand hover:bg-brand-dark text-white font-extrabold rounded-md py-3 flex items-center justify-center gap-2"
+              className="w-full mt-6 bg-brand hover:bg-brand-dark text-white font-extrabold rounded-sm py-3 flex items-center justify-center gap-2"
             >
               <Plus size={18} /> Nuevo informe
             </button>
           )}
           <nav className="mt-6 space-y-1 font-extrabold">
-            <button onClick={onInicio} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md bg-white/10 text-white">
+            <button onClick={onInicio} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-sm bg-white/10 text-white">
               <Inbox size={18} /> Informes
             </button>
-            <button onClick={onLogout} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-slate-400 hover:text-white">
+            <button onClick={onLogout} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-slate-400 hover:text-white">
               <LogOut size={18} /> Cerrar sesión
             </button>
           </nav>
           <div className="mt-6 pt-5 border-t border-white/10 flex items-center gap-2 text-sm font-bold text-slate-400">
-            <div className="w-7 h-7 rounded bg-white text-brand grid place-items-center text-xs font-black">35</div>
+            <div className="w-7 h-7 rounded-sm bg-white text-brand grid place-items-center text-xs font-black">35</div>
             E.T. N° 35 · SIE
           </div>
         </div>
@@ -55,12 +55,12 @@ const AppShell = ({ user, counts, canCreate, onNuevo, onInicio, onLogout, childr
 
       <main className="flex-1 min-w-0 px-5 pt-6 pb-28 lg:p-0">
         <div className="flex items-center gap-3 lg:hidden mb-5">
-          <div className="w-11 h-11 shrink-0 rounded-md bg-brand text-white grid place-items-center font-black">{iniciales(user)}</div>
+          <div className="w-11 h-11 shrink-0 rounded-sm bg-brand text-white grid place-items-center font-black">{iniciales(user)}</div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-slate-400 truncate">{detalleRol}</p>
             <p className="font-black text-lg -mt-0.5 truncate">{nombreCompleto(user)}</p>
           </div>
-          <button onClick={onLogout} title="Cerrar sesión" className="w-11 h-11 rounded-md bg-white border border-slate-200 grid place-items-center text-slate-500">
+          <button onClick={onLogout} title="Cerrar sesión" className="w-11 h-11 rounded-sm bg-white border border-slate-200 grid place-items-center text-slate-500">
             <LogOut size={18} />
           </button>
         </div>
@@ -75,7 +75,7 @@ const AppShell = ({ user, counts, canCreate, onNuevo, onInicio, onLogout, childr
           <button
             onClick={onNuevo}
             title="Nuevo informe"
-            className="justify-self-center -mt-10 w-16 h-16 rounded-lg bg-brand text-white grid place-items-center shadow-lg shadow-brand/30"
+            className="justify-self-center -mt-10 w-16 h-16 rounded bg-brand text-white grid place-items-center shadow-lg shadow-brand/30"
           >
             <Plus size={28} />
           </button>

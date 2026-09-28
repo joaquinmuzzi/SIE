@@ -233,7 +233,7 @@ const Dashboard = () => {
         <div className="relative mt-5 lg:mt-5">
           <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
-            className="w-full bg-white border border-slate-200 rounded-md pl-11 pr-4 py-3 font-semibold placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand"
+            className="w-full bg-white border border-slate-200 rounded-sm pl-11 pr-4 py-3 font-semibold placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand"
             placeholder="Buscar por título, alumno, DNI o curso"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
@@ -247,7 +247,7 @@ const Dashboard = () => {
                 setEstadoFiltro(valor);
                 setPage(1);
               }}
-              className={`px-4 py-2 rounded-md font-extrabold text-sm whitespace-nowrap ${estadoFiltro === valor ? 'bg-slate-900 text-white' : 'bg-white border border-slate-200 text-slate-500'}`}
+              className={`px-4 py-2 rounded-sm font-extrabold text-sm whitespace-nowrap ${estadoFiltro === valor ? 'bg-slate-900 text-white' : 'bg-white border border-slate-200 text-slate-500'}`}
             >
               {texto}
               {valor && <span className={estadoFiltro === valor ? 'text-slate-400' : 'text-slate-300'}> {counts[valor]}</span>}
@@ -272,7 +272,7 @@ const Dashboard = () => {
             <button
               onClick={() => setPage((p) => Math.max(p - 1, 1))}
               disabled={page <= 1}
-              className="flex items-center gap-1 px-3 py-2 rounded-md border border-slate-300 bg-white font-bold text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex items-center gap-1 px-3 py-2 rounded-sm border border-slate-300 bg-white font-bold text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <ChevronLeft size={16} /> Anterior
             </button>
@@ -280,7 +280,7 @@ const Dashboard = () => {
             <button
               onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
               disabled={page >= totalPages}
-              className="flex items-center gap-1 px-3 py-2 rounded-md border border-slate-300 bg-white font-bold text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex items-center gap-1 px-3 py-2 rounded-sm border border-slate-300 bg-white font-bold text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Siguiente <ChevronRight size={16} />
             </button>

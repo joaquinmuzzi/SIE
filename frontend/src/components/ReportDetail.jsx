@@ -32,7 +32,7 @@ const ReportDetail = ({ report, permisos, onBack, onEdit, onChangeState, onClose
         <ArrowLeft size={18} /> Informes
       </button>
 
-      <div className="bg-white border border-slate-200 rounded-lg p-5 mt-4">
+      <div className="bg-white border border-slate-200 rounded p-5 mt-4">
         <div className="flex items-center gap-3">
           <Avatar report={report} />
           <div className="min-w-0">
@@ -63,7 +63,7 @@ const ReportDetail = ({ report, permisos, onBack, onEdit, onChangeState, onClose
       ) : (
         <div className="space-y-3">
           {voces.map((v) => (
-            <div key={v.quien} className={`bg-white border border-slate-200 border-l-4 ${v.borde} rounded-md p-4`}>
+            <div key={v.quien} className={`bg-white border border-slate-200 border-l-4 ${v.borde} rounded-sm p-4`}>
               <p className="text-xs font-extrabold uppercase tracking-wide text-slate-500">{v.quien}</p>
               <p className="text-[15px] text-slate-700 mt-1 leading-relaxed whitespace-pre-wrap">{v.texto}</p>
             </div>
@@ -73,7 +73,7 @@ const ReportDetail = ({ report, permisos, onBack, onEdit, onChangeState, onClose
 
       {permisos.descargo && (
         <form
-          className="bg-white border border-slate-200 rounded-lg p-5 mt-6"
+          className="bg-white border border-slate-200 rounded p-5 mt-6"
           onSubmit={(e) => {
             e.preventDefault();
             ejecutar(() => onDescargo(descargo));
@@ -83,43 +83,43 @@ const ReportDetail = ({ report, permisos, onBack, onEdit, onChangeState, onClose
             <MessageSquare size={18} /> {report.descargo_alumno ? 'Editar mi descargo' : 'Mi descargo'}
           </label>
           <textarea
-            className="w-full border border-slate-300 rounded-md px-3 py-2.5 h-32 focus:outline-none focus:ring-2 focus:ring-brand"
+            className="w-full border border-slate-300 rounded-sm px-3 py-2.5 h-32 focus:outline-none focus:ring-2 focus:ring-brand"
             placeholder="Escribí tu versión de lo que pasó..."
             value={descargo}
             onChange={(e) => setDescargo(e.target.value)}
             required
           />
-          <button disabled={ocupado} className="mt-3 bg-brand hover:bg-brand-dark text-white font-extrabold rounded-md px-5 py-2.5 flex items-center gap-2 disabled:opacity-50">
+          <button disabled={ocupado} className="mt-3 bg-brand hover:bg-brand-dark text-white font-extrabold rounded-sm px-5 py-2.5 flex items-center gap-2 disabled:opacity-50">
             <Send size={16} /> Enviar descargo
           </button>
         </form>
       )}
 
-      {error && <p className="mt-4 text-sm font-bold text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">{error}</p>}
+      {error && <p className="mt-4 text-sm font-bold text-red-700 bg-red-50 border border-red-200 rounded-sm px-3 py-2">{error}</p>}
 
       <div className="flex flex-wrap gap-3 mt-6">
         {permisos.editar && (
-          <button onClick={onEdit} className="flex-1 min-w-[140px] bg-white border border-slate-300 font-extrabold rounded-md py-3 flex items-center justify-center gap-2">
+          <button onClick={onEdit} className="flex-1 min-w-[140px] bg-white border border-slate-300 font-extrabold rounded-sm py-3 flex items-center justify-center gap-2">
             <Pencil size={16} /> Editar
           </button>
         )}
         {permisos.cambiarEstado && report.estado === 'abierto' && (
-          <button disabled={ocupado} onClick={() => ejecutar(() => onChangeState('en_revision'))} className="flex-1 min-w-[140px] bg-slate-900 text-white font-extrabold rounded-md py-3 flex items-center justify-center gap-2 disabled:opacity-50">
+          <button disabled={ocupado} onClick={() => ejecutar(() => onChangeState('en_revision'))} className="flex-1 min-w-[140px] bg-slate-900 text-white font-extrabold rounded-sm py-3 flex items-center justify-center gap-2 disabled:opacity-50">
             <CheckCircle size={16} /> Poner en revisión
           </button>
         )}
         {permisos.cambiarEstado && report.estado === 'en_revision' && (
-          <button disabled={ocupado} onClick={() => ejecutar(() => onChangeState('cerrado'))} className="flex-1 min-w-[140px] bg-brand hover:bg-brand-dark text-white font-extrabold rounded-md py-3 flex items-center justify-center gap-2 disabled:opacity-50">
+          <button disabled={ocupado} onClick={() => ejecutar(() => onChangeState('cerrado'))} className="flex-1 min-w-[140px] bg-brand hover:bg-brand-dark text-white font-extrabold rounded-sm py-3 flex items-center justify-center gap-2 disabled:opacity-50">
             <CheckCircle size={16} /> Finalizar informe
           </button>
         )}
         {report.estado === 'cerrado' && (
-          <button onClick={onDownload} className="flex-1 min-w-[140px] bg-brand hover:bg-brand-dark text-white font-extrabold rounded-md py-3 flex items-center justify-center gap-2">
+          <button onClick={onDownload} className="flex-1 min-w-[140px] bg-brand hover:bg-brand-dark text-white font-extrabold rounded-sm py-3 flex items-center justify-center gap-2">
             <Download size={16} /> Descargar PDF
           </button>
         )}
         {permisos.cerrar && report.estado !== 'cerrado' && (
-          <button disabled={ocupado} onClick={() => ejecutar(onClose)} className="flex-1 min-w-[140px] bg-white border border-red-200 text-red-700 font-extrabold rounded-md py-3 flex items-center justify-center gap-2 disabled:opacity-50">
+          <button disabled={ocupado} onClick={() => ejecutar(onClose)} className="flex-1 min-w-[140px] bg-white border border-red-200 text-red-700 font-extrabold rounded-sm py-3 flex items-center justify-center gap-2 disabled:opacity-50">
             <Trash2 size={16} /> Cerrar informe
           </button>
         )}

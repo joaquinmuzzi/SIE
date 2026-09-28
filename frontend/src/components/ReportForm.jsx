@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ArrowLeft, Search, UserCheck } from 'lucide-react';
 import { GRAVEDADES, TIPOS, nombreCompleto } from './ui';
 
-const ENTRADA = 'w-full bg-white border border-slate-300 rounded-md px-3 py-2.5 font-semibold focus:outline-none focus:ring-2 focus:ring-brand disabled:bg-slate-100 disabled:text-slate-500';
+const ENTRADA = 'w-full bg-white border border-slate-300 rounded-sm px-3 py-2.5 font-semibold focus:outline-none focus:ring-2 focus:ring-brand disabled:bg-slate-100 disabled:text-slate-500';
 const ETIQUETA = 'block text-sm font-extrabold text-slate-700 mb-1';
 const GRAVEDAD_ACTIVA = { leve: 'bg-amber-50 text-amber-800 ring-amber-300', alta: 'bg-orange-50 text-orange-800 ring-orange-300', muy_alta: 'bg-red-50 text-red-800 ring-red-300' };
 const ALCANCES = [['individual', 'Un alumno'], ['curso', 'Un curso'], ['todos', 'Toda la comunidad']];
@@ -76,7 +76,7 @@ const ReportForm = ({ report, permisos, alumnos, padres, onCancel, onSubmit }) =
       </button>
       <h1 className="text-3xl font-black text-slate-900 mt-3">{editando ? 'Editar informe' : 'Nuevo informe'}</h1>
 
-      <form onSubmit={enviar} className="bg-white border border-slate-200 rounded-lg p-6 mt-5 space-y-5">
+      <form onSubmit={enviar} className="bg-white border border-slate-200 rounded p-6 mt-5 space-y-5">
         <div>
           <label className={ETIQUETA}>Título</label>
           <input className={ENTRADA} value={form.titulo} onChange={set('titulo')} disabled={bloquearDatos} required />
@@ -98,7 +98,7 @@ const ReportForm = ({ report, permisos, alumnos, padres, onCancel, onSubmit }) =
                   type="button"
                   disabled={bloquearDatos}
                   onClick={() => setForm({ ...form, gravedad: v })}
-                  className={`flex-1 py-2.5 rounded-md ring-1 ring-inset text-sm font-extrabold disabled:cursor-not-allowed ${form.gravedad === v ? `${GRAVEDAD_ACTIVA[v]} ring-2` : 'bg-white text-slate-500 ring-slate-200'}`}
+                  className={`flex-1 py-2.5 rounded-sm ring-1 ring-inset text-sm font-extrabold disabled:cursor-not-allowed ${form.gravedad === v ? `${GRAVEDAD_ACTIVA[v]} ring-2` : 'bg-white text-slate-500 ring-slate-200'}`}
                 >
                   {t}
                 </button>
@@ -112,14 +112,14 @@ const ReportForm = ({ report, permisos, alumnos, padres, onCancel, onSubmit }) =
 
         <div>
           <span className={ETIQUETA}>Dirigido a</span>
-          <div className="grid grid-cols-3 bg-slate-100 rounded-md p-1 text-sm font-extrabold">
+          <div className="grid grid-cols-3 bg-slate-100 rounded-sm p-1 text-sm font-extrabold">
             {ALCANCES.map(([v, t]) => (
               <button
                 key={v}
                 type="button"
                 disabled={editando}
                 onClick={() => setForm({ ...form, alcance: v, id_alumno: '', id_padre: '', curso_destino: '' })}
-                className={`py-2 rounded disabled:cursor-not-allowed ${form.alcance === v ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'}`}
+                className={`py-2 rounded-sm disabled:cursor-not-allowed ${form.alcance === v ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'}`}
               >
                 {t}
               </button>
@@ -131,11 +131,11 @@ const ReportForm = ({ report, permisos, alumnos, padres, onCancel, onSubmit }) =
           <div className="grid sm:grid-cols-2 gap-5">
             <div>
               <span className={ETIQUETA}>Alumno</span>
-              <div className="bg-slate-50 border border-slate-200 rounded-md px-3 py-2.5 font-semibold text-slate-600">{nombreCompleto(report.alumno) || 'Sin asignar'}</div>
+              <div className="bg-slate-50 border border-slate-200 rounded-sm px-3 py-2.5 font-semibold text-slate-600">{nombreCompleto(report.alumno) || 'Sin asignar'}</div>
             </div>
             <div>
               <span className={ETIQUETA}>Tutor a notificar</span>
-              <div className="bg-slate-50 border border-slate-200 rounded-md px-3 py-2.5 font-semibold text-slate-600">{tutor || 'Sin asignar'}</div>
+              <div className="bg-slate-50 border border-slate-200 rounded-sm px-3 py-2.5 font-semibold text-slate-600">{tutor || 'Sin asignar'}</div>
             </div>
           </div>
         )}
@@ -158,13 +158,13 @@ const ReportForm = ({ report, permisos, alumnos, padres, onCancel, onSubmit }) =
             <div>
               <span className={ETIQUETA}>Tutor a notificar</span>
               {!form.id_alumno ? (
-                <div className="bg-slate-50 border border-slate-200 rounded-md px-3 py-2.5 font-semibold text-slate-400 text-sm">Se completa al elegir el alumno.</div>
+                <div className="bg-slate-50 border border-slate-200 rounded-sm px-3 py-2.5 font-semibold text-slate-400 text-sm">Se completa al elegir el alumno.</div>
               ) : form.id_padre ? (
-                <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-md px-3 py-2.5 font-semibold text-slate-600">
+                <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-sm px-3 py-2.5 font-semibold text-slate-600">
                   <UserCheck size={18} className="text-emerald-600" /> {tutor || 'Cargando...'}
                 </div>
               ) : (
-                <div className="bg-red-50 border border-red-200 rounded-md px-3 py-2.5 text-sm font-semibold text-red-700">
+                <div className="bg-red-50 border border-red-200 rounded-sm px-3 py-2.5 text-sm font-semibold text-red-700">
                   El alumno no tiene padre/tutor asignado. Hay que vincularlo antes de crear el informe.
                 </div>
               )}
@@ -185,7 +185,7 @@ const ReportForm = ({ report, permisos, alumnos, padres, onCancel, onSubmit }) =
         )}
 
         {form.alcance === 'todos' && (
-          <p className="text-sm font-semibold text-slate-500 bg-slate-50 border border-slate-200 rounded-md px-3 py-2.5">
+          <p className="text-sm font-semibold text-slate-500 bg-slate-50 border border-slate-200 rounded-sm px-3 py-2.5">
             Este informe va a ser visible para todos los alumnos y padres/tutores del sistema.
           </p>
         )}
@@ -209,11 +209,11 @@ const ReportForm = ({ report, permisos, alumnos, padres, onCancel, onSubmit }) =
           </div>
         )}
 
-        {error && <p className="text-sm font-bold text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">{error}</p>}
+        {error && <p className="text-sm font-bold text-red-700 bg-red-50 border border-red-200 rounded-sm px-3 py-2">{error}</p>}
 
         <div className="flex justify-end gap-3 pt-2">
-          <button type="button" onClick={onCancel} className="px-5 py-2.5 rounded-md font-extrabold text-slate-600 border border-slate-300">Cancelar</button>
-          <button type="submit" disabled={ocupado} className="px-5 py-2.5 rounded-md font-extrabold bg-brand hover:bg-brand-dark text-white disabled:opacity-50">
+          <button type="button" onClick={onCancel} className="px-5 py-2.5 rounded-sm font-extrabold text-slate-600 border border-slate-300">Cancelar</button>
+          <button type="submit" disabled={ocupado} className="px-5 py-2.5 rounded-sm font-extrabold bg-brand hover:bg-brand-dark text-white disabled:opacity-50">
             {editando ? 'Guardar cambios' : 'Crear informe'}
           </button>
         </div>

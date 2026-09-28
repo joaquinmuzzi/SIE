@@ -8,7 +8,7 @@ const ReportCard = ({ report, onOpen }) => {
   return (
     <article
       onClick={() => onOpen(report)}
-      className={`bg-white rounded-lg border border-slate-200 p-5 cursor-pointer hover:border-slate-400 transition ${report.estado === 'cerrado' ? 'opacity-60' : ''}`}
+      className={`bg-white rounded border border-slate-200 p-5 cursor-pointer hover:border-slate-400 transition ${report.estado === 'cerrado' ? 'opacity-60' : ''}`}
     >
       <div className="flex items-center gap-3">
         <Avatar report={report} />
@@ -16,7 +16,7 @@ const ReportCard = ({ report, onOpen }) => {
           <p className="font-extrabold text-slate-900 truncate">{destinatario(report)}</p>
           <p className="text-sm font-semibold text-slate-400">{[curso, fechaCorta(report.fecha)].filter(Boolean).join(' · ')}</p>
         </div>
-        <span className="w-9 h-9 shrink-0 rounded-md bg-slate-100 grid place-items-center text-slate-500">
+        <span className="w-9 h-9 shrink-0 rounded-sm bg-slate-100 grid place-items-center text-slate-500">
           <ChevronRight size={18} />
         </span>
       </div>
