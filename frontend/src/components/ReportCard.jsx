@@ -1,8 +1,8 @@
 import { ChevronRight } from 'lucide-react';
 import { Avatar, BarraAvance, ChipEstado, ChipGravedad, TIPOS, destinatario, fechaCorta, intervenciones } from './ui';
 
-// Columnas compartidas por el encabezado de la lista y cada fila (desde tablet)
-export const COLUMNAS = 'md:grid md:grid-cols-[minmax(0,12rem)_minmax(0,1fr)_5.5rem_7.5rem_5.5rem_1rem] md:items-center md:gap-5';
+// Columnas compartidas por el encabezado y cada fila; solo con pantalla ancha (con el lateral, en menos espacio se apilan)
+export const COLUMNAS = 'xl:grid xl:grid-cols-[minmax(0,11rem)_minmax(0,1fr)_5.5rem_7.5rem_5.5rem_1rem] xl:items-center xl:gap-5';
 
 export const EncabezadoLista = () => (
   <div className={`hidden ${COLUMNAS} px-5 py-2.5 bg-slate-50 border-b border-slate-200 text-xs font-medium uppercase tracking-wide text-slate-500`}>
@@ -31,7 +31,7 @@ const ReportCard = ({ report, onOpen }) => {
           <p className="font-medium text-slate-900 truncate">{destinatario(report)}</p>
           {curso && <p className="text-xs text-slate-500">{curso}</p>}
         </div>
-        <span className="md:hidden text-xs text-slate-500">{fechaCorta(report.fecha)}</span>
+        <span className="xl:hidden text-xs text-slate-500">{fechaCorta(report.fecha)}</span>
       </div>
 
       <div className="min-w-0">
@@ -41,18 +41,18 @@ const ReportCard = ({ report, onOpen }) => {
         </p>
       </div>
 
-      <div className="flex md:block gap-1.5 flex-wrap">
+      <div className="flex xl:block gap-1.5 flex-wrap">
         <ChipGravedad report={report} />
-        <span className="md:hidden"><ChipEstado report={report} /></span>
+        <span className="xl:hidden"><ChipEstado report={report} /></span>
       </div>
 
       <div className="space-y-1.5">
-        <span className="hidden md:inline-flex"><ChipEstado report={report} /></span>
+        <span className="hidden xl:inline-flex"><ChipEstado report={report} /></span>
         <BarraAvance report={report} />
       </div>
 
-      <span className="hidden md:block text-sm text-slate-500">{fechaCorta(report.fecha)}</span>
-      <ChevronRight size={16} className="hidden md:block text-slate-400" />
+      <span className="hidden xl:block text-sm text-slate-500">{fechaCorta(report.fecha)}</span>
+      <ChevronRight size={16} className="hidden xl:block text-slate-400" />
     </article>
   );
 };
