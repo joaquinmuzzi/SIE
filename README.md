@@ -25,10 +25,10 @@ Proyecto de **Prácticas Profesionalizantes 2026** · 6° 2° Computación.
 
 | Rol | Ve | Puede |
 |---|---|---|
-| Profesor / Preceptor | Todos los informes | Crear informes y redactar el texto del profesor |
-| Regente | Todos los informes | Crear, redactar el texto del regente, pasar a revisión y cerrar |
+| Profesor / Preceptor | Todos los informes | Crear informes y redactar el texto del profesor en los informes que creó |
+| Regente | Todos los informes | Crear informes, redactar el texto del regente, pasar a revisión y finalizar |
 | Gestor / Directivo | Todos los informes | Control total: editar todos los campos, cambiar estados y cerrar |
-| Asesoría Pedagógica / DOE / PAT | Todos los informes | Consulta |
+| Asesoría Pedagógica / DOE / PAT | Todos los informes | Redactar el texto del PAT |
 | Secretaría | Todos los informes | Consulta |
 | Alumno | Sus informes, los de su curso y los generales | Redactar su descargo |
 | Padre / Tutor | Informes de sus hijos, de sus cursos y los generales | Consulta y descarga en PDF |
@@ -85,6 +85,7 @@ Crear `backend/.env`:
 ```env
 PORT=5000
 JWT_SECRET=una_clave_larga_y_secreta
+CORS_ORIGIN=http://localhost:5173
 # Opción A: URL de conexión completa (la que usa Railway)
 MYSQL_DATABASE=mysql://usuario:clave@host:3306/sistema_informes
 # Opción B: sin MYSQL_DATABASE, se conecta a la base "sistema_informes" con estos datos
@@ -98,7 +99,7 @@ MYSQL_DATABASE=mysql://usuario:clave@host:3306/sistema_informes
 npm run dev
 ```
 
-> El CORS del backend (`backend/index.js`) está configurado para el dominio de Netlify. Para probar en local, agregar `http://localhost:5173` a `origin`.
+> `CORS_ORIGIN` admite varios orígenes separados por coma. Si no se define, se permite solo el dominio de Netlify.
 
 ### 3. Frontend
 
@@ -125,14 +126,14 @@ La aplicación queda en `http://localhost:5173`.
 |---|---|---|---|
 | POST | `/api/auth/register` | Público | Registro de usuario |
 | POST | `/api/auth/login` | Público | Inicio de sesión, devuelve el token |
-| GET | `/api/auth/alumnos` | Gestor, Directivo, Profesor, Preceptor | Listado de alumnos |
+| GET | `/api/auth/alumnos` | Gestor, Directivo, Profesor, Preceptor, Regente | Listado de alumnos |
 | GET | `/api/auth/users` | Gestor, Directivo | Listado de usuarios |
 | GET | `/api/auth/padres` | Público | Tutores (para el registro de alumnos) |
 | GET | `/api/auth/alumnos-sin-padre` | Público | Alumnos sin tutor (para el registro de tutores) |
-| POST | `/api/auth/link-hijos` | Autenticado | Vincula alumnos a un tutor |
+| POST | `/api/auth/link-hijos` | El propio tutor, Gestor o Directivo | Vincula alumnos a un tutor |
 | GET | `/api/reports?page=&limit=` | Autenticado | Informes visibles para el usuario, paginados |
 | POST | `/api/reports` | Gestor, Directivo, Profesor, Preceptor, Regente | Crear informe |
-| PUT | `/api/reports/:id` | Autenticado (cada rol edita su campo) | Editar informe |
+| PUT | `/api/reports/:id` | Cada rol edita su propio campo; docentes solo en sus informes | Editar informe (no si está cerrado) |
 | PATCH | `/api/reports/:id/state` | Gestor, Directivo, Regente | Cambiar estado |
 | POST | `/api/reports/:id/descargo` | Alumno del informe | Cargar descargo |
 | DELETE | `/api/reports/:id` | Gestor, Directivo | Cerrar informe (no lo borra) |
@@ -140,7 +141,7 @@ La aplicación queda en `http://localhost:5173`.
 ## Despliegue
 
 - **Frontend (Netlify):** directorio base `frontend`, comando `npm run build`, carpeta publicada `frontend/dist`, variable `REACT_APP_API_URL` con la URL pública de la API.
-- **Backend (Railway):** directorio `backend`, comando `npm start`, variables `MYSQL_DATABASE` (URL de la base MySQL de Railway) y `JWT_SECRET`.
+- **Backend (Railway):** directorio `backend`, comando `npm start`, variables `MYSQL_DATABASE` (URL de la base MySQL de Railway) y `JWT_SECRET`. `CORS_ORIGIN` es opcional.
 
 ## Documentación del proyecto
 
@@ -161,7 +162,6 @@ La gestión de tareas se lleva en ClickUp (espacio *Mensajería E.T. 35*).
 - Confirmación de lectura del tutor.
 - Recuperación de contraseña por correo.
 - Alta de roles de conducción habilitada solo por la administración.
-- Edición directa del campo PAT para los roles PAT / DOE.
 - Guardado de borradores sin conexión.
 
 ## Equipo

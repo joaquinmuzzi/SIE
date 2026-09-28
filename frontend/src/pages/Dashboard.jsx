@@ -21,6 +21,7 @@ const Dashboard = () => {
   const [alumnos, setAlumnos] = useState([]);
   const [padres, setPadres] = useState([]);
   const [editingId, setEditingId] = useState(null);
+  const [editingReport, setEditingReport] = useState(null);
   const [descargoReportId, setDescargoReportId] = useState(null);
   const [descargoText, setDescargoText] = useState('');
   const [busquedaAlumno, setBusquedaAlumno] = useState('');
@@ -45,6 +46,17 @@ const Dashboard = () => {
   const canEditProfesor = ['gestor', 'directivo', 'profesor', 'preceptor'].includes(user.rol);
   const canEditRegente = ['gestor', 'directivo', 'regente'].includes(user.rol);
   const canEditPat = ['gestor', 'directivo', 'asesoria_pedagogica', 'doe', 'pat'].includes(user.rol);
+  const isAdmin = ['gestor', 'directivo'].includes(user.rol);
+
+  // Profesores y preceptores solo editan los informes que crearon; regencia, PAT/DOE y gestores editan cualquiera abierto
+  const canEditReport = (report) => {
+    if (report.estado === 'cerrado') return false;
+    if (isAdmin || user.rol === 'regente' || ['asesoria_pedagogica', 'doe', 'pat'].includes(user.rol)) return true;
+    if (['profesor', 'preceptor'].includes(user.rol)) return report.creadoPor?._id === user._id;
+    return false;
+  };
+  // Titulo, tipo y gravedad solo los cambia quien crea el informe o un gestor/directivo
+  const canEditMeta = !editingId || isAdmin;
 
   const cursosDisponibles = [...new Set(alumnos.map((a) => a.curso).filter(Boolean))].sort();
 
@@ -162,6 +174,7 @@ const Dashboard = () => {
       id_padre: report.padre?._id || '',
     });
     setEditingId(report._id);
+    setEditingReport(report);
     setBusquedaAlumno('');
     setShowModal(true);
   };
@@ -187,6 +200,7 @@ const Dashboard = () => {
     });
     setBusquedaAlumno('');
     setEditingId(null);
+    setEditingReport(null);
   };
 
   const handleAlcanceChange = (e) => {
@@ -365,7 +379,7 @@ const Dashboard = () => {
                         <Download size={18} />
                       </button>
                     )}
-                    {canCreate && report.estado !== 'cerrado' && (
+                    {canEditReport(report) && (
                       <button onClick={() => handleEdit(report)} className="text-gray-400 hover:text-brand">
                         <Edit size={18} />
                       </button>
@@ -468,23 +482,25 @@ const Dashboard = () => {
           <div className="bg-white rounded-xl p-8 w-full max-w-2xl shadow-2xl my-8">
             <h2 className="text-xl font-bold mb-6">{editingId ? 'Editar Informe' : 'Crear Nuevo Informe'}</h2>
             <form onSubmit={handleSubmit}>
-              <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <div>
                   <label className="block text-sm font-bold mb-1">Titulo</label>
                   <input
                     type="text"
-                    className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand"
+                    className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand disabled:bg-gray-100 disabled:text-gray-500"
                     value={formData.titulo}
                     onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
+                    disabled={!canEditMeta}
                     required
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-bold mb-1">Tipo</label>
                   <select
-                    className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand"
+                    className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand disabled:bg-gray-100 disabled:text-gray-500"
                     value={formData.tipo}
                     onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
+                    disabled={!canEditMeta}
                   >
                     <option value="conducta">Conducta</option>
                     <option value="consejo_aula">Consejo de Aula</option>
@@ -493,13 +509,14 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <div>
                   <label className="block text-sm font-bold mb-1">Gravedad</label>
                   <select
-                    className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand"
+                    className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand disabled:bg-gray-100 disabled:text-gray-500"
                     value={formData.gravedad}
                     onChange={(e) => setFormData({ ...formData, gravedad: e.target.value })}
+                    disabled={!canEditMeta}
                   >
                     <option value="leve">Leve</option>
                     <option value="alta">Alta</option>
@@ -509,7 +526,7 @@ const Dashboard = () => {
                 <div>
                   <label className="block text-sm font-bold mb-1">Alcance</label>
                   <select
-                    className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand"
+                    className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-brand disabled:bg-gray-100 disabled:text-gray-500"
                     value={formData.alcance}
                     onChange={handleAlcanceChange}
                     disabled={!!editingId}
@@ -521,7 +538,30 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              {formData.alcance === 'individual' && (
+              {!canEditMeta && (
+                <p className="text-xs text-gray-500 -mt-2 mb-4">
+                  Titulo, tipo y gravedad solo pueden modificarlos un Gestor o Directivo.
+                </p>
+              )}
+
+              {formData.alcance === 'individual' && editingId && (
+                <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold mb-1">Alumno Afectado</label>
+                    <div className="w-full p-2 border rounded bg-gray-50 text-gray-700">
+                      {nombreCompleto(editingReport?.alumno) || 'Sin asignar'}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold mb-1">Padre / Tutor a Notificar</label>
+                    <div className="w-full p-2 border rounded bg-gray-50 text-gray-700">
+                      {nombreCompleto(editingReport?.padre) || 'Sin asignar'}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {formData.alcance === 'individual' && !editingId && (
                 <>
                   <div className="mb-4">
                     <label className="block text-sm font-bold mb-1">Buscar Alumno (DNI o nombre)</label>
@@ -552,7 +592,11 @@ const Dashboard = () => {
                   </div>
                   <div className="mb-4">
                     <label className="block text-sm font-bold mb-1">Padre / Tutor a Notificar</label>
-                    {formData.id_padre ? (
+                    {!formData.id_alumno ? (
+                      <div className="w-full p-2 border rounded bg-gray-50 text-gray-400 text-sm">
+                        Se completa al elegir el alumno.
+                      </div>
+                    ) : formData.id_padre ? (
                       <div className="w-full p-2 border rounded bg-gray-50 text-gray-700">
                         {nombreCompleto(padres.find((p) => String(p._id) === String(formData.id_padre))) || 'Cargando...'}
                       </div>

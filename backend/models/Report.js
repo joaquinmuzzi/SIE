@@ -114,7 +114,7 @@ function nestPopulated(row) {
 const Report = {
   async find(filters) {
     const { where, params } = buildWhere(filters);
-    let sql = `${baseSelect}${where} ORDER BY i.created_at DESC`;
+    let sql = `${baseSelect}${where} ORDER BY i.created_at DESC, i.id_informe DESC`;
 
     if (filters && filters.limit) {
       sql += ' LIMIT ? OFFSET ?';

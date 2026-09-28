@@ -103,7 +103,7 @@ exports.getUsers = async (req, res) => {
 exports.getPadres = async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT id_usuario AS _id, nombre, apellido, email, dni, telefono FROM usuarios WHERE rol = 'padre' OR rol = 'tutor'`
+      `SELECT id_usuario AS _id, nombre, apellido, email FROM usuarios WHERE rol = 'padre' OR rol = 'tutor'`
     );
     res.json(rows);
   } catch (error) {
@@ -114,7 +114,7 @@ exports.getPadres = async (req, res) => {
 exports.getAlumnosSinPadre = async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT id_usuario AS _id, nombre, apellido, email, dni, curso FROM usuarios WHERE rol = 'alumno' AND id_padre IS NULL`
+      `SELECT id_usuario AS _id, nombre, apellido, email, curso FROM usuarios WHERE rol = 'alumno' AND id_padre IS NULL`
     );
     res.json(rows);
   } catch (error) {
@@ -129,11 +129,28 @@ exports.linkHijos = async (req, res) => {
       return res.status(400).json({ message: 'Se requiere id_padre y al menos un alumno' });
     }
 
-    for (const id_alumno of alumno_ids) {
-      await pool.query('UPDATE usuarios SET id_padre = ? WHERE id_usuario = ?', [id_padre, id_alumno]);
+    // Solo el propio tutor (al registrarse) o un gestor/directivo pueden vincular alumnos
+    const esAdmin = ['gestor', 'directivo'].includes(req.user.rol);
+    const esElTutor = ['padre', 'tutor'].includes(req.user.rol) && Number(id_padre) === req.user.id_usuario;
+    if (!esAdmin && !esElTutor) {
+      return res.status(403).json({ message: 'No tienes permiso para vincular alumnos a este tutor' });
     }
 
-    res.json({ message: `${alumno_ids.length} alumno(s) vinculado(s) correctamente` });
+    const [tutores] = await pool.query(
+      "SELECT id_usuario FROM usuarios WHERE id_usuario = ? AND rol IN ('padre', 'tutor')",
+      [id_padre]
+    );
+    if (!tutores.length) {
+      return res.status(400).json({ message: 'El usuario indicado no es un padre/tutor' });
+    }
+
+    // Un tutor solo puede tomar alumnos que todavia no tienen tutor asignado
+    const [result] = await pool.query(
+      `UPDATE usuarios SET id_padre = ? WHERE rol = 'alumno' AND id_usuario IN (?)${esAdmin ? '' : ' AND id_padre IS NULL'}`,
+      [id_padre, alumno_ids.map(Number)]
+    );
+
+    res.json({ message: `${result.affectedRows} alumno(s) vinculado(s) correctamente` });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

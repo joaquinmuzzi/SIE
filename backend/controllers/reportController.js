@@ -82,6 +82,10 @@ exports.updateReport = async (req, res) => {
       return res.status(404).json({ message: 'Informe no encontrado' });
     }
 
+    if (report.estado === 'cerrado') {
+      return res.status(400).json({ message: 'No se puede editar un informe cerrado' });
+    }
+
     const rol = req.user.rol;
     const updateData = {};
 
@@ -96,6 +100,9 @@ exports.updateReport = async (req, res) => {
       updateData.texto_regente = req.body.texto_regente;
       updateData.texto_pat = req.body.texto_pat;
     } else if (rol === 'profesor' || rol === 'preceptor') {
+      if (report.creadoPor._id !== req.user.id_usuario) {
+        return res.status(403).json({ message: 'Solo el docente que creo el informe puede editar su texto' });
+      }
       if (req.body.texto_profesor !== undefined) {
         updateData.texto_profesor = req.body.texto_profesor;
       }
@@ -107,6 +114,8 @@ exports.updateReport = async (req, res) => {
       if (req.body.texto_pat !== undefined) {
         updateData.texto_pat = req.body.texto_pat;
       }
+    } else {
+      return res.status(403).json({ message: `El rol ${rol} no puede editar informes` });
     }
 
     const updatedReport = await Report.update(req.params.id, updateData);
