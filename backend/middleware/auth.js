@@ -13,6 +13,10 @@ const protect = async (req, res, next) => {
         return res.status(401).json({ message: 'No autorizado, usuario no encontrado' });
       }
       delete req.user.password;
+      // Con contraseña temporal solo se puede usar el cambio de contraseña
+      if (req.user.debe_cambiar_clave && !req.originalUrl.split('?')[0].endsWith('/auth/change-password')) {
+        return res.status(403).json({ message: 'Tenés que cambiar tu contraseña temporal antes de continuar', codigo: 'CAMBIAR_CLAVE' });
+      }
       next();
     } catch (error) {
       res.status(401).json({ message: 'No autorizado, token fallido' });

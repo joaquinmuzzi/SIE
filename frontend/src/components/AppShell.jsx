@@ -1,4 +1,4 @@
-import { Inbox, LogOut, Plus } from 'lucide-react';
+import { Inbox, LogOut, Plus, Users } from 'lucide-react';
 import { ROLES, iniciales, nombreCompleto } from './ui';
 
 const Contador = ({ n, texto, punto }) => (
@@ -12,7 +12,8 @@ const Contador = ({ n, texto, punto }) => (
 );
 
 // Estructura comun del panel: lateral fijo de alto completo en compu, encabezado y barra inferior en celular
-const AppShell = ({ user, counts, canCreate, onNuevo, onInicio, onLogout, children }) => {
+const AppShell = ({ user, counts, canCreate, vista, onNuevo, onInicio, onUsuarios, onLogout, children }) => {
+  const enUsuarios = vista === 'usuarios';
   const rol = ROLES[user.rol] || user.rol;
   const detalle = user.cargo || user.curso;
 
@@ -54,9 +55,14 @@ const AppShell = ({ user, counts, canCreate, onNuevo, onInicio, onLogout, childr
         )}
 
         <nav className="mt-6 space-y-1 font-medium">
-          <button onClick={onInicio} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-sm bg-white/10 text-white border-l-2 border-brand">
+          <button onClick={onInicio} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-sm ${enUsuarios ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'bg-white/10 text-white border-l-2 border-brand'}`}>
             <Inbox size={18} /> Informes
           </button>
+          {onUsuarios && (
+            <button onClick={onUsuarios} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-sm ${enUsuarios ? 'bg-white/10 text-white border-l-2 border-brand' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
+              <Users size={18} /> Usuarios
+            </button>
+          )}
         </nav>
 
         <button onClick={onLogout} className="mt-auto flex items-center gap-3 px-3 py-2.5 rounded-sm text-slate-400 hover:text-white hover:bg-white/5 font-medium">
@@ -80,10 +86,15 @@ const AppShell = ({ user, counts, canCreate, onNuevo, onInicio, onLogout, childr
         </main>
       </div>
 
-      <nav className="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 h-20 px-6 grid grid-cols-3 items-center">
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 h-20 px-6 grid items-center" style={{ gridTemplateColumns: `repeat(${onUsuarios ? 4 : 3}, minmax(0, 1fr))` }}>
         <button onClick={onInicio} className="flex flex-col items-center gap-0.5 text-[11px] font-medium text-brand">
           <Inbox size={18} /> Informes
         </button>
+        {onUsuarios && (
+          <button onClick={onUsuarios} className={`flex flex-col items-center gap-0.5 text-[11px] font-medium ${enUsuarios ? 'text-brand' : 'text-slate-500'}`}>
+            <Users size={18} /> Usuarios
+          </button>
+        )}
         {canCreate ? (
           <button
             onClick={onNuevo}

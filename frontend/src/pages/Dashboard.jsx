@@ -7,6 +7,7 @@ import AppShell from '../components/AppShell';
 import ReportCard, { EncabezadoLista } from '../components/ReportCard';
 import ReportDetail from '../components/ReportDetail';
 import ReportForm from '../components/ReportForm';
+import UsuariosPanel from '../components/UsuariosPanel';
 import { ESTADOS, GRAVEDADES, TIPOS, destinatario, nombreCompleto } from '../components/ui';
 
 const PAGE_SIZE = 10;
@@ -23,8 +24,7 @@ const Dashboard = () => {
   const [busquedaAplicada, setBusquedaAplicada] = useState('');
   const [cargando, setCargando] = useState(true);
   const [alumnos, setAlumnos] = useState([]);
-  const [padres, setPadres] = useState([]);
-  // vista: 'lista' | 'detalle' | 'form'
+  // vista: 'lista' | 'detalle' | 'form' | 'usuarios'
   const [vista, setVista] = useState('lista');
   const [seleccionado, setSeleccionado] = useState(null);
   const [editando, setEditando] = useState(null);
@@ -43,8 +43,10 @@ const Dashboard = () => {
     return false;
   };
 
+  // El alumno puede escribir su descargo hasta que venza el plazo que fija el sistema
   const puedeDescargo = (report) =>
-    user.rol === 'alumno' && report.alcance === 'individual' && report.alumno?._id === user._id && report.estado !== 'cerrado';
+    user.rol === 'alumno' && report.alcance === 'individual' && report.alumno?._id === user._id && report.estado !== 'cerrado'
+    && !report.descargo_vencido && !(report.fecha_limite_descargo && new Date() > new Date(report.fecha_limite_descargo));
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -62,7 +64,6 @@ const Dashboard = () => {
   useEffect(() => {
     if (canCreate) {
       api.get('/auth/alumnos').then(({ data }) => setAlumnos(data)).catch(() => {});
-      api.get('/auth/padres').then(({ data }) => setPadres(data)).catch(() => {});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -167,7 +168,7 @@ const Dashboard = () => {
     addLine(report.titulo, 13, true);
     addLine(`Tipo: ${TIPOS[report.tipo] || report.tipo}  |  Gravedad: ${GRAVEDADES[report.gravedad] || report.gravedad}  |  Estado: ${ESTADOS[report.estado] || report.estado}`);
     addLine(`Fecha: ${new Date(report.fecha).toLocaleDateString()}`);
-    addLine(`Dirigido a: ${destinatario(report)}${report.alcance === 'individual' ? ` | Padre: ${nombreCompleto(report.padre) || 'Sin asignar'}` : ''}`);
+    addLine(`Dirigido a: ${destinatario(report)}${report.alcance === 'individual' ? ` | Responsable: ${report.alumno?.responsable_nombre || 'Sin asignar'}` : ''}`);
     addLine(`Creado por: ${nombreCompleto(report.creadoPor)} (${report.creadoPor?.rol || ''})`);
 
     if (report.texto_profesor) {
@@ -191,7 +192,9 @@ const Dashboard = () => {
   };
 
   let contenido;
-  if (vista === 'form') {
+  if (vista === 'usuarios') {
+    contenido = <UsuariosPanel user={user} />;
+  } else if (vista === 'form') {
     contenido = (
       <ReportForm
         report={editando}
@@ -202,7 +205,6 @@ const Dashboard = () => {
           textoPat: isAdmin || esPat,
         }}
         alumnos={alumnos}
-        padres={padres}
         onCancel={editando ? () => abrir(editando) : irALista}
         onSubmit={guardar}
       />
@@ -294,7 +296,7 @@ const Dashboard = () => {
   }
 
   return (
-    <AppShell user={user} counts={counts} canCreate={canCreate} onNuevo={nuevo} onInicio={irALista} onLogout={logout}>
+    <AppShell user={user} counts={counts} canCreate={canCreate} vista={vista} onNuevo={nuevo} onInicio={irALista} onUsuarios={isAdmin ? () => setVista('usuarios') : undefined} onLogout={logout}>
       {contenido}
     </AppShell>
   );

@@ -1,12 +1,15 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
+import CambiarClavePage from './pages/CambiarClavePage';
 import Dashboard from './pages/Dashboard';
 
-const PrivateRoute = ({ children }) => {
+// Con contraseña temporal sin estrenar solo se puede llegar a la pantalla de cambio de clave
+const PrivateRoute = ({ children, permitirClaveTemporal = false }) => {
   const { user } = useAuth();
-  return user ? children : <Navigate to="/login" />;
+  if (!user) return <Navigate to="/login" />;
+  if (user.debe_cambiar_clave && !permitirClaveTemporal) return <Navigate to="/cambiar-clave" />;
+  return children;
 };
 
 function App() {
@@ -15,14 +18,14 @@ function App() {
       <Router>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route 
-            path="/" 
+          <Route path="/cambiar-clave" element={<PrivateRoute permitirClaveTemporal><CambiarClavePage /></PrivateRoute>} />
+          <Route
+            path="/"
             element={
               <PrivateRoute>
                 <Dashboard />
               </PrivateRoute>
-            } 
+            }
           />
         </Routes>
       </Router>

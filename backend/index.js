@@ -2,8 +2,16 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { connectDB } = require('./config/db');
+const { migrar } = require('./config/migrate');
+const { iniciarCiclo } = require('./services/ciclo');
+const cicloRepository = require('./repositories/cicloRepository');
+const mailer = require('./services/mailer');
 
-connectDB();
+// Conecta, aplica las migraciones pendientes y recien despues arranca el control de plazos de los informes
+connectDB()
+  .then(migrar)
+  .then(() => iniciarCiclo({ repositorio: cicloRepository, mailer }))
+  .catch((error) => console.error('Error al iniciar (migraciones/ciclo):', error.message));
 
 const app = express();
 

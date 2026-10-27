@@ -13,6 +13,8 @@ const baseSelect = `
     i.texto_regente,
     i.texto_pat,
     i.descargo_alumno,
+    i.fecha_limite_descargo,
+    i.descargo_vencido,
     i.fecha,
     i.created_at        AS createdAt,
     i.updated_at        AS updatedAt,
@@ -21,17 +23,15 @@ const baseSelect = `
     al.apellido         AS "alumno.apellido",
     al.email            AS "alumno.email",
     al.curso            AS "alumno.curso",
-    pa.id_usuario       AS "padre._id",
-    pa.nombre           AS "padre.nombre",
-    pa.apellido         AS "padre.apellido",
-    pa.email            AS "padre.email",
+    al.responsable_nombre   AS "alumno.responsable_nombre",
+    al.responsable_email    AS "alumno.responsable_email",
+    al.responsable_telefono AS "alumno.responsable_telefono",
     cp.id_usuario       AS "creadoPor._id",
     cp.nombre           AS "creadoPor.nombre",
     cp.apellido         AS "creadoPor.apellido",
     cp.rol              AS "creadoPor.rol"
   FROM informes i
   LEFT JOIN usuarios al ON i.id_alumno = al.id_usuario
-  LEFT JOIN usuarios pa ON i.id_padre = pa.id_usuario
   LEFT JOIN usuarios cp ON i.creado_por_id = cp.id_usuario
 `;
 
@@ -47,12 +47,6 @@ function buildWhere(filters) {
       orConditions.push("(i.alcance = 'curso' AND i.curso_destino = ?)");
       orParams.push(filters.curso);
     }
-  } else if (filters && filters.padreId) {
-    orConditions.push('i.id_padre = ?');
-    orParams.push(filters.padreId);
-    orConditions.push("i.alcance = 'todos'");
-    orConditions.push("(i.alcance = 'curso' AND i.curso_destino IN (SELECT curso FROM usuarios WHERE id_padre = ?))");
-    orParams.push(filters.padreId);
   }
 
   const andConditions = [];
@@ -88,12 +82,9 @@ function nestPopulated(row) {
     apellido: row['alumno.apellido'],
     email: row['alumno.email'],
     curso: row['alumno.curso'],
-  };
-  const padre = {
-    _id: row['padre._id'],
-    nombre: row['padre.nombre'],
-    apellido: row['padre.apellido'],
-    email: row['padre.email'],
+    responsable_nombre: row['alumno.responsable_nombre'],
+    responsable_email: row['alumno.responsable_email'],
+    responsable_telefono: row['alumno.responsable_telefono'],
   };
   const creadoPor = {
     _id: row['creadoPor._id'],
@@ -113,11 +104,12 @@ function nestPopulated(row) {
     texto_regente: row.texto_regente,
     texto_pat: row.texto_pat,
     descargo_alumno: row.descargo_alumno,
+    fecha_limite_descargo: row.fecha_limite_descargo,
+    descargo_vencido: Boolean(row.descargo_vencido),
     fecha: row.fecha,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     alumno,
-    padre,
     creadoPor,
   };
 }
@@ -166,7 +158,7 @@ const Report = {
   async create(data) {
     const [result] = await pool.query(
       `INSERT INTO informes
-        (titulo, tipo, gravedad, estado, alcance, curso_destino, texto_profesor, texto_regente, texto_pat, id_alumno, id_padre, creado_por_id)
+        (titulo, tipo, gravedad, estado, alcance, curso_destino, texto_profesor, texto_regente, texto_pat, id_alumno, fecha_limite_descargo, creado_por_id)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         data.titulo,
@@ -179,7 +171,7 @@ const Report = {
         data.texto_regente || null,
         data.texto_pat || null,
         data.id_alumno || null,
-        data.id_padre || null,
+        data.fecha_limite_descargo || null,
         data.creado_por_id,
       ]
     );
@@ -192,7 +184,7 @@ const Report = {
     const allowed = [
       'titulo', 'tipo', 'gravedad', 'estado', 'alcance', 'curso_destino',
       'texto_profesor', 'texto_regente', 'texto_pat',
-      'descargo_alumno', 'id_alumno', 'id_padre',
+      'descargo_alumno', 'id_alumno',
     ];
     for (const key of allowed) {
       if (data[key] !== undefined) {

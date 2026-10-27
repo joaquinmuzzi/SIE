@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Search, UserCheck } from 'lucide-react';
+import { ArrowLeft, Clock, MailWarning, Search, UserCheck } from 'lucide-react';
 import { GRAVEDADES, TIPOS, nombreCompleto } from './ui';
 
 const ENTRADA = 'w-full bg-white border border-slate-300 rounded-sm px-3 py-2.5 font-normal focus:outline-none focus:ring-2 focus:ring-brand disabled:bg-slate-100 disabled:text-slate-500';
@@ -9,7 +9,7 @@ const ALCANCES = [['individual', 'Un alumno'], ['curso', 'Un curso'], ['todos', 
 
 const vacio = {
   titulo: '', tipo: 'conducta', gravedad: 'leve', alcance: 'individual', curso_destino: '',
-  texto_profesor: '', texto_regente: '', texto_pat: '', id_alumno: '', id_padre: '',
+  texto_profesor: '', texto_regente: '', texto_pat: '', id_alumno: '',
 };
 
 const desdeInforme = (r) => ({
@@ -22,10 +22,9 @@ const desdeInforme = (r) => ({
   texto_regente: r.texto_regente || '',
   texto_pat: r.texto_pat || '',
   id_alumno: r.alumno?._id || '',
-  id_padre: r.padre?._id || '',
 });
 
-const ReportForm = ({ report, permisos, alumnos, padres, onCancel, onSubmit }) => {
+const ReportForm = ({ report, permisos, alumnos, onCancel, onSubmit }) => {
   const editando = !!report;
   const [form, setForm] = useState(editando ? desdeInforme(report) : vacio);
   const [busqueda, setBusqueda] = useState('');
@@ -38,22 +37,21 @@ const ReportForm = ({ report, permisos, alumnos, padres, onCancel, onSubmit }) =
     if (!busqueda) return true;
     return (a.dni || '').includes(busqueda) || nombreCompleto(a).toLowerCase().includes(busqueda.toLowerCase());
   });
-  const tutor = editando
-    ? nombreCompleto(report.padre)
-    : nombreCompleto(padres.find((p) => String(p._id) === String(form.id_padre)));
+  // El responsable (padre, madre o tutor) no tiene cuenta: se le avisa por el correo cargado en la ficha del alumno
+  const alumnoElegido = alumnos.find((a) => String(a._id) === String(form.id_alumno));
+  const responsable = editando ? report.alumno : alumnoElegido;
 
   const set = (campo) => (e) => setForm({ ...form, [campo]: e.target.value });
 
   const elegirAlumno = (e) => {
-    const alumno = alumnos.find((a) => a._id === Number(e.target.value));
-    setForm({ ...form, id_alumno: e.target.value, id_padre: alumno?.id_padre ? String(alumno.id_padre) : '' });
+    setForm({ ...form, id_alumno: e.target.value });
   };
 
   const enviar = async (e) => {
     e.preventDefault();
     setError('');
-    if (form.alcance === 'individual' && !form.id_padre) {
-      setError('El alumno seleccionado no tiene padre/tutor asignado. No se puede crear el informe.');
+    if (form.alcance === 'individual' && !form.id_alumno) {
+      setError('Seleccioná un alumno.');
       return;
     }
     if (form.alcance === 'curso' && !form.curso_destino) {
@@ -118,7 +116,7 @@ const ReportForm = ({ report, permisos, alumnos, padres, onCancel, onSubmit }) =
                 key={v}
                 type="button"
                 disabled={editando}
-                onClick={() => setForm({ ...form, alcance: v, id_alumno: '', id_padre: '', curso_destino: '' })}
+                onClick={() => setForm({ ...form, alcance: v, id_alumno: '', curso_destino: '' })}
                 className={`py-2 rounded-sm disabled:cursor-not-allowed ${form.alcance === v ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'}`}
               >
                 {t}
@@ -134,8 +132,8 @@ const ReportForm = ({ report, permisos, alumnos, padres, onCancel, onSubmit }) =
               <div className="bg-slate-50 border border-slate-200 rounded-sm px-3 py-2.5 font-normal text-slate-600">{nombreCompleto(report.alumno) || 'Sin asignar'}</div>
             </div>
             <div>
-              <span className={ETIQUETA}>Tutor a notificar</span>
-              <div className="bg-slate-50 border border-slate-200 rounded-sm px-3 py-2.5 font-normal text-slate-600">{tutor || 'Sin asignar'}</div>
+              <span className={ETIQUETA}>Responsable a notificar</span>
+              <div className="bg-slate-50 border border-slate-200 rounded-sm px-3 py-2.5 font-normal text-slate-600">{responsable?.responsable_nombre || 'Sin cargar'}</div>
             </div>
           </div>
         )}
@@ -156,20 +154,28 @@ const ReportForm = ({ report, permisos, alumnos, padres, onCancel, onSubmit }) =
               </select>
             </div>
             <div>
-              <span className={ETIQUETA}>Tutor a notificar</span>
+              <span className={ETIQUETA}>Responsable a notificar (por correo)</span>
               {!form.id_alumno ? (
                 <div className="bg-slate-50 border border-slate-200 rounded-sm px-3 py-2.5 font-normal text-slate-400 text-sm">Se completa al elegir el alumno.</div>
-              ) : form.id_padre ? (
+              ) : responsable?.responsable_email ? (
                 <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-sm px-3 py-2.5 font-normal text-slate-600">
-                  <UserCheck size={18} className="text-emerald-600" /> {tutor || 'Cargando...'}
+                  <UserCheck size={18} className="text-emerald-600 shrink-0" />
+                  <span className="min-w-0">{responsable.responsable_nombre}<span className="block text-xs text-slate-400 truncate">{responsable.responsable_email}</span></span>
                 </div>
               ) : (
-                <div className="bg-red-50 border border-red-200 rounded-sm px-3 py-2.5 text-sm font-normal text-red-700">
-                  El alumno no tiene padre/tutor asignado. Hay que vincularlo antes de crear el informe.
+                <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-sm px-3 py-2.5 text-sm font-normal text-amber-800">
+                  <MailWarning size={18} className="shrink-0 mt-0.5" /> Este alumno no tiene un responsable con correo cargado: el informe se crea, pero nadie va a recibir el aviso.
                 </div>
               )}
             </div>
           </div>
+        )}
+
+        {form.alcance === 'individual' && !editando && (
+          <p className="flex items-start gap-2 text-sm font-normal text-slate-600 bg-slate-50 border border-slate-200 rounded-sm px-3 py-2.5">
+            <Clock size={16} className="shrink-0 mt-0.5 text-slate-400" />
+            Al crearlo, el alumno recibe un aviso y tiene 5 días hábiles para presentar su descargo. Pasado el plazo, el informe pasa solo a revisión y, si nadie lo cierra, se cierra automáticamente a los 15 días.
+          </p>
         )}
 
         {form.alcance === 'curso' && (
@@ -186,7 +192,7 @@ const ReportForm = ({ report, permisos, alumnos, padres, onCancel, onSubmit }) =
 
         {form.alcance === 'todos' && (
           <p className="text-sm font-normal text-slate-500 bg-slate-50 border border-slate-200 rounded-sm px-3 py-2.5">
-            Este informe va a ser visible para todos los alumnos y padres/tutores del sistema.
+            Este informe va a ser visible para todos los alumnos del sistema.
           </p>
         )}
 

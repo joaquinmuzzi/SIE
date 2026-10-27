@@ -21,8 +21,6 @@ export const ROLES = {
   secretaria: 'Secretaría',
   asesoria_pedagogica: 'Asesoría / DOE / PAT',
   alumno: 'Alumno',
-  padre: 'Padre / Tutor',
-  tutor: 'Padre / Tutor',
 };
 
 export const TIPOS = {

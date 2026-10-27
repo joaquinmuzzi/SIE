@@ -29,7 +29,7 @@ const User = {
     const salt = await bcrypt.genSalt(10);
     const hash = await bcrypt.hash(data.password, salt);
     const [result] = await pool.query(
-      'INSERT INTO usuarios (nombre, apellido, email, password, rol, dni, telefono, cargo, curso, id_padre, tiene_acceso) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO usuarios (nombre, apellido, email, password, rol, dni, telefono, cargo, curso, id_padre, tiene_acceso, debe_cambiar_clave, responsable_nombre, responsable_email, responsable_telefono) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         data.nombre,
         data.apellido || '',
@@ -42,6 +42,10 @@ const User = {
         data.curso || null,
         data.id_padre || null,
         data.tiene_acceso ? 1 : 0,
+        data.debe_cambiar_clave ? 1 : 0,
+        data.responsable_nombre || null,
+        data.responsable_email || null,
+        data.responsable_telefono || null,
       ]
     );
     return {
@@ -56,7 +60,16 @@ const User = {
       curso: data.curso || null,
       id_padre: data.id_padre || null,
       tiene_acceso: data.tiene_acceso ? 1 : 0,
+      debe_cambiar_clave: data.debe_cambiar_clave ? 1 : 0,
+      responsable_nombre: data.responsable_nombre || null,
+      responsable_email: data.responsable_email || null,
+      responsable_telefono: data.responsable_telefono || null,
     };
+  },
+
+  async setPassword(id, plana, debeCambiar) {
+    const hash = await bcrypt.hash(plana, await bcrypt.genSalt(10));
+    await pool.query('UPDATE usuarios SET password = ?, debe_cambiar_clave = ? WHERE id_usuario = ?', [hash, debeCambiar ? 1 : 0, id]);
   },
 };
 

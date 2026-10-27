@@ -19,13 +19,15 @@ export const AuthProvider = ({ children }) => {
     const { data } = await api.post('/auth/login', { email, password });
     setUser(data);
     localStorage.setItem('userInfo', JSON.stringify(data));
+    return data;
   };
 
-  const register = async (nombre, apellido, email, password, rol, dni, telefono, cargo, curso, id_padre) => {
-    const { data } = await api.post('/auth/register', { nombre, apellido, email, password, rol, dni, telefono, cargo, curso, id_padre });
-    setUser(data);
-    localStorage.setItem('userInfo', JSON.stringify(data));
-    return data;
+  // Cambia la clave y deja de pedir el cambio obligatorio
+  const cambiarClave = async (actual, nueva) => {
+    await api.post('/auth/change-password', { actual, nueva });
+    const actualizado = { ...user, debe_cambiar_clave: false };
+    setUser(actualizado);
+    localStorage.setItem('userInfo', JSON.stringify(actualizado));
   };
 
   const logout = () => {
@@ -34,7 +36,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, cambiarClave, logout, loading }}>
       {!loading && children}
     </AuthContext.Provider>
   );

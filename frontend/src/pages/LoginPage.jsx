@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Lock, Mail } from 'lucide-react';
 import AuthLayout, { BOTON_AUTH, ENTRADA_AUTH, ERROR_AUTH, ETIQUETA_AUTH } from '../components/AuthLayout';
 
@@ -14,10 +14,10 @@ const LoginPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await login(email, password);
-      navigate('/');
+      const usuario = await login(email, password);
+      navigate(usuario.debe_cambiar_clave ? '/cambiar-clave' : '/');
     } catch (err) {
-      setError('Credenciales inválidas');
+      setError(err.response?.data?.message || 'Credenciales inválidas');
     }
   };
 
@@ -38,7 +38,7 @@ const LoginPage = () => {
         <button type="submit" className={BOTON_AUTH}>Ingresar</button>
       </form>
       <p className="text-sm font-normal text-slate-500 mt-5 text-center">
-        ¿No tenés cuenta? <Link to="/register" className="text-brand font-semibold hover:underline">Registrate</Link>
+        ¿Todavía no tenés cuenta? La crea el gestor de la escuela y la contraseña temporal te llega por correo.
       </p>
     </AuthLayout>
   );

@@ -1,4 +1,29 @@
 const Report = require('../models/Report');
+const mailer = require('../services/mailer');
+const mensajes = require('../services/mensajes');
+const { sumarDiasHabiles, config } = require('../services/ciclo');
+
+const nombreCompleto = (u) => `${u.nombre || ''} ${u.apellido || ''}`.trim();
+
+// Avisos por mail de un informe individual: nunca hacen fallar la operacion principal
+async function avisarNuevoInforme(informe) {
+  const alumno = informe.alumno;
+  const resumen = { titulo: informe.titulo, gravedad: informe.gravedad };
+  await mailer.enviar({ para: alumno.email, ...mensajes.avisoDescargoAlumno({ nombre: alumno.nombre, informe: resumen, limite: informe.fecha_limite_descargo }) });
+  await mailer.enviar({
+    para: alumno.responsable_email,
+    ...mensajes.avisoResponsable({ nombreResponsable: alumno.responsable_nombre || 'familia', nombreAlumno: nombreCompleto(alumno), informe: resumen, limite: informe.fecha_limite_descargo }),
+  });
+}
+
+async function avisarCambioEstado(informe) {
+  const alumno = informe.alumno;
+  if (informe.alcance !== 'individual' || !alumno || !alumno.responsable_email) return;
+  await mailer.enviar({
+    para: alumno.responsable_email,
+    ...mensajes.cambioEstadoResponsable({ nombreResponsable: alumno.responsable_nombre || 'familia', nombreAlumno: nombreCompleto(alumno), informe: { titulo: informe.titulo }, estado: informe.estado }),
+  });
+}
 
 exports.getReports = async (req, res) => {
   try {
@@ -8,8 +33,6 @@ exports.getReports = async (req, res) => {
     if (rol === 'alumno') {
       filters.alumnoId = req.user.id_usuario;
       filters.curso = req.user.curso;
-    } else if (rol === 'padre' || rol === 'tutor') {
-      filters.padreId = req.user.id_usuario;
     }
 
     if (['abierto', 'en_revision', 'cerrado'].includes(req.query.estado)) {
@@ -48,7 +71,7 @@ exports.createReport = async (req, res) => {
   const {
     titulo, tipo, gravedad,
     texto_profesor, texto_regente, texto_pat,
-    id_alumno, id_padre,
+    id_alumno,
     alcance, curso_destino,
   } = req.body;
 
@@ -59,8 +82,8 @@ exports.createReport = async (req, res) => {
       return res.status(400).json({ message: 'Alcance invalido. Valores permitidos: individual, curso, todos' });
     }
 
-    if (alcanceFinal === 'individual' && !id_padre) {
-      return res.status(400).json({ message: 'El padre/tutor es obligatorio para crear un informe individual' });
+    if (alcanceFinal === 'individual' && !id_alumno) {
+      return res.status(400).json({ message: 'El alumno es obligatorio para crear un informe individual' });
     }
     if (alcanceFinal === 'curso' && !curso_destino) {
       return res.status(400).json({ message: 'El curso destino es obligatorio para un informe de curso' });
@@ -76,9 +99,13 @@ exports.createReport = async (req, res) => {
       alcance: alcanceFinal,
       curso_destino: alcanceFinal === 'curso' ? curso_destino : null,
       id_alumno: alcanceFinal === 'individual' ? id_alumno : null,
-      id_padre: alcanceFinal === 'individual' ? id_padre : null,
+      // Plazo para que el alumno presente su descargo (dias habiles, configurable)
+      fecha_limite_descargo: alcanceFinal === 'individual' ? sumarDiasHabiles(new Date(), config().descargoDiasHabiles) : null,
       creado_por_id: req.user.id_usuario,
     });
+    if (report.alcance === 'individual' && report.alumno._id) {
+      avisarNuevoInforme(report).catch((e) => console.error('[aviso informe]', e.message));
+    }
     res.status(201).json(report);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -105,7 +132,6 @@ exports.updateReport = async (req, res) => {
       updateData.gravedad = req.body.gravedad;
       updateData.estado = req.body.estado;
       updateData.id_alumno = req.body.id_alumno;
-      updateData.id_padre = req.body.id_padre;
       updateData.texto_profesor = req.body.texto_profesor;
       updateData.texto_regente = req.body.texto_regente;
       updateData.texto_pat = req.body.texto_pat;
@@ -150,6 +176,17 @@ exports.addDescargo = async (req, res) => {
       return res.status(403).json({ message: 'No puedes agregar un descargo en un informe que no es tuyo' });
     }
 
+    if (report.estado === 'cerrado') {
+      return res.status(400).json({ message: 'El informe ya esta cerrado: no se puede agregar un descargo' });
+    }
+    const vencido = report.descargo_vencido || (report.fecha_limite_descargo && new Date() > new Date(report.fecha_limite_descargo));
+    if (vencido) {
+      return res.status(400).json({ message: 'Venció el plazo para presentar el descargo de este informe' });
+    }
+    if (!String(req.body.descargo_alumno || '').trim()) {
+      return res.status(400).json({ message: 'El descargo no puede estar vacio' });
+    }
+
     const updatedReport = await Report.update(req.params.id, {
       descargo_alumno: req.body.descargo_alumno,
     });
@@ -187,6 +224,9 @@ exports.changeState = async (req, res) => {
     }
 
     const updatedReport = await Report.update(req.params.id, { estado });
+    if (estado !== report.estado) {
+      avisarCambioEstado(updatedReport).catch((e) => console.error('[aviso estado]', e.message));
+    }
     res.json(updatedReport);
   } catch (error) {
     res.status(500).json({ message: error.message });

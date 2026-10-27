@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, CheckCircle, Download, MessageSquare, Pencil, Send, Trash2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Clock, Download, MessageSquare, Pencil, Send, Trash2 } from 'lucide-react';
 import {
   Avatar, BarraAvance, Etiquetas, ROLES, destinatario, etapaActual, etapas, fechaCorta, intervenciones, nombreCompleto,
 } from './ui';
@@ -24,7 +24,10 @@ const ReportDetail = ({ report, permisos, onBack, onEdit, onChangeState, onClose
   const voces = intervenciones(report);
   const pasos = etapas(report);
   const curso = report.alcance === 'individual' ? report.alumno?.curso : null;
-  const tutor = report.alcance === 'individual' ? nombreCompleto(report.padre) : null;
+  const responsable = report.alcance === 'individual' ? report.alumno?.responsable_nombre : null;
+  const limite = report.fecha_limite_descargo ? new Date(report.fecha_limite_descargo) : null;
+  const vencido = report.descargo_vencido || (limite && new Date() > limite);
+  const fechaLimite = limite ? limite.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' }) : '';
 
   return (
     <div>
@@ -37,7 +40,7 @@ const ReportDetail = ({ report, permisos, onBack, onEdit, onChangeState, onClose
           <Avatar report={report} />
           <div className="min-w-0">
             <p className="font-semibold text-slate-900">{destinatario(report)}</p>
-            <p className="text-sm font-normal text-slate-400">{[curso, tutor && `Tutor: ${tutor}`].filter(Boolean).join(' · ') || 'Informe general'}</p>
+            <p className="text-sm font-normal text-slate-400">{[curso, responsable && `Responsable: ${responsable}`].filter(Boolean).join(' · ') || 'Informe general'}</p>
           </div>
         </div>
         <h1 className="font-semibold text-xl leading-snug mt-4 text-slate-900">{report.titulo}</h1>
@@ -56,6 +59,22 @@ const ReportDetail = ({ report, permisos, onBack, onEdit, onChangeState, onClose
           Creado por {nombreCompleto(report.creadoPor)} ({ROLES[report.creadoPor?.rol] || report.creadoPor?.rol}) · {fechaCorta(report.fecha)}
         </p>
       </div>
+
+      {report.alcance === 'individual' && limite && (
+        <div className={`flex items-start gap-2 mt-4 rounded-sm border px-4 py-3 text-sm font-medium ${
+          report.descargo_alumno ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+            : vencido ? 'bg-slate-100 border-slate-200 text-slate-600'
+              : 'bg-amber-50 border-amber-200 text-amber-900'}`}>
+          <Clock size={16} className="shrink-0 mt-0.5" />
+          {report.descargo_alumno
+            ? 'El alumno presentó su descargo.'
+            : vencido
+              ? `Venció el plazo para el descargo (${fechaLimite}). El informe siguió su curso sin el testimonio del alumno.`
+              : permisos.descargo
+                ? `Tenés tiempo hasta el ${fechaLimite} para presentar tu descargo.`
+                : `El alumno puede presentar su descargo hasta el ${fechaLimite}.`}
+        </div>
+      )}
 
       <h2 className="font-semibold text-slate-900 mt-6 mb-3">Intervenciones</h2>
       {voces.length === 0 ? (
