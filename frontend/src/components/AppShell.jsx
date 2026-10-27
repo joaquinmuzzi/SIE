@@ -1,4 +1,4 @@
-import { Inbox, LogOut, Plus, UserCog, Users } from 'lucide-react';
+import { Inbox, LogOut, Plus, Settings, Users } from 'lucide-react';
 import { ROLES, iniciales, nombreCompleto } from './ui';
 
 const Contador = ({ n, texto, punto }) => (
@@ -29,21 +29,16 @@ const AppShell = ({ user, counts, canCreate, vista, onNuevo, onInicio, onUsuario
           </div>
         </div>
 
-        <button
-          onClick={onCuenta}
-          title="Mi cuenta y cambio de contraseña"
-          className={`flex items-center gap-3 mt-8 -mx-2 px-2 py-2 rounded-sm text-left hover:bg-white/5 ${enCuenta ? 'bg-white/10' : ''}`}
-        >
+        <div className="flex items-center gap-3 mt-8">
           <div className="w-12 h-12 shrink-0 rounded-sm bg-brand text-white grid place-items-center text-lg font-semibold">
             {iniciales(user)}
           </div>
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0">
             <p className="font-semibold text-white truncate">{nombreCompleto(user)}</p>
             <p className="text-sm text-slate-400 truncate">{rol}</p>
             {detalle && <p className="text-xs text-slate-500 truncate" title={detalle}>{detalle}</p>}
           </div>
-          <UserCog size={16} className="shrink-0 text-slate-500" />
-        </button>
+        </div>
 
         <div className="grid grid-cols-3 gap-2 mt-6">
           <Contador n={counts.abierto} texto="Abiertos" punto="bg-teal-400" />
@@ -71,16 +66,26 @@ const AppShell = ({ user, counts, canCreate, vista, onNuevo, onInicio, onUsuario
           )}
         </nav>
 
-        <button onClick={onLogout} className="mt-auto flex items-center gap-3 px-3 py-2.5 rounded-sm text-slate-400 hover:text-white hover:bg-white/5 font-medium">
-          <LogOut size={18} /> Cerrar sesión
-        </button>
+        <div className="mt-auto flex items-center gap-1">
+          <button
+            onClick={onCuenta}
+            title="Configuración de la cuenta"
+            aria-label="Configuración de la cuenta"
+            className={`w-11 h-11 shrink-0 grid place-items-center rounded-sm hover:text-white hover:bg-white/5 ${enCuenta ? 'bg-white/10 text-white' : 'text-slate-400'}`}
+          >
+            <Settings size={20} />
+          </button>
+          <button onClick={onLogout} className="flex-1 flex items-center gap-3 px-3 py-2.5 rounded-sm text-slate-400 hover:text-white hover:bg-white/5 font-medium">
+            <LogOut size={18} /> Cerrar sesión
+          </button>
+        </div>
       </aside>
 
       <div className="lg:pl-72">
         <main className="max-w-5xl mx-auto px-5 pt-6 pb-28 lg:px-10 lg:py-10">
           <div className="flex items-center gap-3 lg:hidden mb-5">
-            <div onClick={onCuenta} className="w-11 h-11 shrink-0 rounded-sm bg-brand text-white grid place-items-center font-semibold cursor-pointer">{iniciales(user)}</div>
-            <div onClick={onCuenta} className="flex-1 min-w-0 cursor-pointer" title="Mi cuenta">
+            <div className="w-11 h-11 shrink-0 rounded-sm bg-brand text-white grid place-items-center font-semibold">{iniciales(user)}</div>
+            <div className="flex-1 min-w-0">
               <p className="text-sm text-slate-500 truncate">{[rol, detalle].filter(Boolean).join(' · ')}</p>
               <p className="font-semibold text-lg -mt-0.5 truncate">{nombreCompleto(user)}</p>
             </div>
@@ -92,8 +97,8 @@ const AppShell = ({ user, counts, canCreate, vista, onNuevo, onInicio, onUsuario
         </main>
       </div>
 
-      <nav className="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 h-20 px-6 grid items-center" style={{ gridTemplateColumns: `repeat(${onUsuarios ? 4 : 3}, minmax(0, 1fr))` }}>
-        <button onClick={onInicio} className="flex flex-col items-center gap-0.5 text-[11px] font-medium text-brand">
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 h-20 px-6 grid items-center" style={{ gridTemplateColumns: `repeat(${onUsuarios ? 5 : 4}, minmax(0, 1fr))` }}>
+        <button onClick={onInicio} className={`flex flex-col items-center gap-0.5 text-[11px] font-medium ${enUsuarios || enCuenta ? 'text-slate-500' : 'text-brand'}`}>
           <Inbox size={18} /> Informes
         </button>
         {onUsuarios && (
@@ -114,6 +119,9 @@ const AppShell = ({ user, counts, canCreate, vista, onNuevo, onInicio, onUsuario
         )}
         <button onClick={onLogout} className="flex flex-col items-center gap-0.5 text-[11px] font-medium text-slate-500">
           <LogOut size={18} /> Salir
+        </button>
+        <button onClick={onCuenta} className={`flex flex-col items-center gap-0.5 text-[11px] font-medium ${enCuenta ? 'text-brand' : 'text-slate-500'}`}>
+          <Settings size={18} /> Cuenta
         </button>
       </nav>
     </div>
