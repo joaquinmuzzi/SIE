@@ -31,7 +31,6 @@ async function migrar() {
   await asegurarColumna('informes', 'descargo_vencido', 'TINYINT(1) NOT NULL DEFAULT 0');
 
   // Catalogo de cursos (año, division, turno, especialidad)
-  const [[{ existia }]] = await pool.query("SELECT COUNT(*) AS existia FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'cursos'");
   await pool.query(`CREATE TABLE IF NOT EXISTS cursos (
     id_curso     INT AUTO_INCREMENT PRIMARY KEY,
     anio         TINYINT      NOT NULL,
@@ -55,8 +54,9 @@ async function migrar() {
     created_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_historial_informe (id_informe)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`);
-  // Solo la primera vez: catalogo inicial de cursos (despues lo administra el gestor)
-  if (!existia) {
+  // Catalogo inicial: solo si la tabla esta vacia (instalacion nueva o primera migracion); despues lo administra el gestor
+  const [[{ cantidad }]] = await pool.query('SELECT COUNT(*) AS cantidad FROM cursos');
+  if (Number(cantidad) === 0) {
     for (const c of catalogoBase()) {
       await pool.query('INSERT IGNORE INTO cursos (anio, division, turno, especialidad) VALUES (?, ?, ?, ?)', [c.anio, c.division, c.turno, c.especialidad]);
     }
