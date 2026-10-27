@@ -17,13 +17,17 @@ Proyecto de **Prácticas Profesionalizantes 2026** · 6° 2° Computación.
 - **Tres intervenciones por informe**, cada una en su propio campo: profesor, regente y PAT.
 - **Descargo del alumno** en sus informes individuales mientras el informe no esté cerrado.
 - **Estados:** `abierto` → `en_revision` → `cerrado`. Los informes no se borran: se cierran y quedan como antecedente.
-- **Descarga en PDF** de los informes cerrados.
-- **Paginación** de 10 informes por página, con **búsqueda** (título, alumno, DNI o curso), **filtros por estado** y contadores.
+- **Descarga en PDF** de los informes cerrados, con formato institucional (encabezado, datos del informe, intervenciones y descargo).
+- **Paginación** de 10 informes por página, con **búsqueda** (título, alumno, DNI o curso), **filtros por estado y por curso** y contadores.
 - **Vista de detalle** de cada informe con sus intervenciones, el avance (emitido → descargo → revisión → cerrado) y las acciones según el rol.
 - **Diseño adaptado al celular**: barra inferior y botón para crear informes.
 - **Padres y tutores sin cuenta:** el alumno guarda los datos de contacto de su responsable (nombre, correo, teléfono) y este recibe por correo un resumen al crearse el informe y cuando cambia de estado.
 - **Plazo para el descargo:** cada informe individual da 5 días hábiles al alumno (aviso, recordatorio a mitad de plazo); al vencer pasa solo a revisión y a los 15 días se cierra automáticamente. Los informes anteriores a esta función no se modifican.
-- **Gestión de usuarios** (Gestor/Directivo): alta de cuentas, estado de la contraseña y restablecimiento.
+- **Gestión de usuarios** (Gestor/Directivo): alta de cuentas, estado de la contraseña, restablecimiento y eliminación (no se puede eliminar a quien ya tiene informes, a uno mismo ni al último gestor).
+- **Mi cuenta:** cada usuario cambia su contraseña desde el engranaje del panel lateral (en celular, junto al botón de salir); se avisa por correo.
+- **Catálogo de cursos** (Gestor/Directivo): año, división, turno y especialidad. El curso de un alumno y el destino de un informe por curso se eligen de un desplegable. Se carga solo el catálogo inicial (1° a 6° año: 10, 9, 9, 2, 2 y 3 divisiones) y 6° 1° y 6° 2° figuran en el turno tarde.
+- **Historial de cada informe:** quién hizo qué y cuándo (creación, cambios de estado, ediciones, descargo y acciones automáticas del «Sistema»).
+- **Estadísticas:** informes por mes, gravedad, tipo y curso, alumnos con más informes y estado de los descargos.
 
 ## Roles
 
@@ -31,7 +35,7 @@ Proyecto de **Prácticas Profesionalizantes 2026** · 6° 2° Computación.
 |---|---|---|
 | Profesor / Preceptor | Todos los informes | Crear informes y redactar el texto del profesor en los informes que creó |
 | Regente | Todos los informes | Crear informes, redactar el texto del regente, pasar a revisión y finalizar |
-| Gestor / Directivo | Todos los informes | Control total: editar todos los campos, cambiar estados y cerrar |
+| Gestor / Directivo | Todos los informes | Control total: editar todos los campos, cambiar estados y cerrar; administrar cuentas y cursos |
 | Asesoría Pedagógica / DOE / PAT | Todos los informes | Redactar el texto del PAT |
 | Secretaría | Todos los informes | Consulta |
 | Alumno | Sus informes, los de su curso y los generales | Redactar su descargo |
@@ -51,19 +55,23 @@ Proyecto de **Prácticas Profesionalizantes 2026** · 6° 2° Computación.
 SIE/
 ├── backend/
 │   ├── config/db.js            # Pool de conexión a MySQL
-│   ├── controllers/            # Lógica de autenticación e informes
+│   ├── controllers/            # Autenticación, informes, cursos e historial/estadísticas
 │   ├── db/schema.sql           # Creación de tablas
 │   ├── db/migration_v2.sql     # Migración para bases ya desplegadas
 │   ├── middleware/auth.js      # Verificación de JWT y autorización por rol
 │   ├── models/                 # Acceso a datos (User, Report)
-│   ├── routes/                 # /api/auth y /api/reports
+│   ├── config/migrate.js       # Migraciones idempotentes que corren al arrancar
+│   ├── routes/                 # /api/auth, /api/reports y /api/cursos
 │   ├── services/               # Mails (Resend), claves temporales y ciclo de vida de los informes
-│   ├── repositories/           # Acceso a datos del ciclo de vida
+│   ├── repositories/           # Acceso a datos del ciclo de vida y del historial
+│   ├── test/                   # Pruebas (node:test)
 │   └── index.js                # Servidor Express
 └── frontend/
     └── src/
         ├── api/axios.js        # Cliente HTTP con el token
-        ├── components/         # AppShell, ReportCard, ReportDetail, ReportForm, AuthLayout y ui
+        ├── utils/informePdf.js # Generación del PDF del informe
+        ├── components/         # AppShell, ReportCard, ReportDetail, ReportForm, UsuariosPanel, CursosPanel,
+        │                         #   EstadisticasPanel, HistorialInforme, MiCuenta, AuthLayout y ui
         ├── context/AuthContext.jsx
         └── pages/              # Login, cambio de clave y Panel (Dashboard, con la sección Usuarios)
 ```
@@ -132,6 +140,13 @@ npm run dev
 
 La aplicación queda en `http://localhost:5173`.
 
+### 4. Pruebas
+
+```bash
+cd backend
+node --test test/ciclo.test.js test/cuenta.test.js test/cursos.test.js
+```
+
 ## API
 
 | Método | Ruta | Acceso | Descripción |
@@ -141,11 +156,16 @@ La aplicación queda en `http://localhost:5173`.
 | GET | `/api/auth/users` | Gestor, Directivo | Listado de usuarios |
 | POST | `/api/auth/users` | Gestor, Directivo | Crea una cuenta y envía la contraseña temporal por correo |
 | POST | `/api/auth/users/:id/reset-password` | Gestor, Directivo | Restablece la contraseña (nueva temporal por correo) |
-| POST | `/api/auth/change-password` | Autenticado | Cambia la contraseña (obligatorio con una temporal) |
-| GET | `/api/reports?page=&limit=&estado=&q=` | Autenticado | Informes visibles para el usuario, paginados, con filtro por estado, búsqueda y cantidad por estado (`counts`) |
+| DELETE | `/api/auth/users/:id` | Gestor, Directivo | Elimina una cuenta (409 si tiene informes; no a uno mismo ni al último gestor) |
+| POST | `/api/auth/change-password` | Autenticado | Cambia la contraseña (obligatorio con una temporal; también desde Mi cuenta) |
+| GET | `/api/cursos` | Autenticado | Catálogo de cursos |
+| POST / PUT / DELETE | `/api/cursos[/:id]` | Gestor, Directivo | Alta, edición (turno, especialidad) y baja de cursos |
+| GET | `/api/reports?page=&limit=&estado=&q=` | Autenticado | Informes visibles para el usuario, paginados, con filtro por estado y curso, búsqueda y cantidad por estado (`counts`) |
 | POST | `/api/reports` | Gestor, Directivo, Profesor, Preceptor, Regente | Crear informe |
 | PUT | `/api/reports/:id` | Cada rol edita su propio campo; docentes solo en sus informes | Editar informe (no si está cerrado) |
 | PATCH | `/api/reports/:id/state` | Gestor, Directivo, Regente | Cambiar estado |
+| GET | `/api/reports/stats` | Autenticado | Estadísticas de los informes visibles |
+| GET | `/api/reports/:id/historial` | Autenticado | Historial de cambios del informe |
 | POST | `/api/reports/:id/descargo` | Alumno del informe | Cargar descargo |
 | DELETE | `/api/reports/:id` | Gestor, Directivo | Cerrar informe (no lo borra) |
 
@@ -162,16 +182,18 @@ En la carpeta compartida de Google Drive del proyecto:
 - Diagrama de contexto, listado de acontecimientos y DFD
 - DER (notación Chen e IDEF1X) y diccionario de datos
 - Planificación: objetivos específicos y diagrama de Gantt
-- Manual de usuario y manual de procedimientos
+- Manual de usuario (v2.2) y manual de procedimientos (v2.2)
 - Bitácora del proyecto
 
 La gestión de tareas se lleva en ClickUp (espacio *Mensajería E.T. 35*).
 
 ## Próximas mejoras
 
-- Recuperación de contraseña autónoma y carga masiva de cuentas.
+- Recuperación de contraseña autónoma por correo y carga masiva de cuentas.
+- Cambio de curso de un alumno desde la interfaz.
+- Confirmar con la escuela los turnos y especialidades de 4° a 6° año.
+- Integración con otros sistemas de la escuela.
 - Confirmación de lectura del tutor.
-- Recuperación de contraseña por correo.
 - Alta de roles de conducción habilitada solo por la administración.
 - Guardado de borradores sin conexión.
 
