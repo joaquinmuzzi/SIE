@@ -1,6 +1,6 @@
 # SIE · Sistema de Informes Escolares
 
-Aplicación web para registrar, seguir y comunicar los **informes de conducta** de la Escuela Técnica N° 35. Docentes y preceptores crean los informes, la regencia y el equipo de acompañamiento intervienen en ellos, el alumno presenta su descargo y las familias consultan los informes que les corresponden desde cualquier dispositivo.
+Aplicación web para registrar, seguir y comunicar los **informes de conducta** de la Escuela Técnica N° 35. Docentes y preceptores crean los informes, la regencia y el equipo de acompañamiento intervienen en ellos, el alumno presenta su descargo dentro de un plazo y las familias reciben avisos por correo (no necesitan cuenta).
 
 Proyecto de **Prácticas Profesionalizantes 2026** · 6° 2° Computación.
 
@@ -11,9 +11,9 @@ Proyecto de **Prácticas Profesionalizantes 2026** · 6° 2° Computación.
 
 ## Funcionalidades
 
-- **Acceso por roles** con usuario y contraseña (JWT). Profesores y preceptores se registran con su cuenta `@bue.edu.ar`.
+- **Acceso por roles** con usuario y contraseña (JWT). **No hay registro público:** el Gestor o Directivo crea las cuentas y la contraseña temporal (aleatoria por usuario) llega por correo; hay que cambiarla en el primer ingreso. Profesores y preceptores usan su cuenta `@bue.edu.ar`.
 - **Informes** de tipo *Conducta*, *Consejo de Aula* o *Consejo Escolar de Convivencia*, con gravedad *Leve*, *Alta* o *Muy alta*.
-- **Alcance:** a un alumno (búsqueda por DNI o nombre; el tutor se asigna automáticamente), a un curso o a toda la comunidad.
+- **Alcance:** a un alumno (búsqueda por DNI o nombre; el responsable del alumno recibe el aviso por correo), a un curso o a toda la comunidad.
 - **Tres intervenciones por informe**, cada una en su propio campo: profesor, regente y PAT.
 - **Descargo del alumno** en sus informes individuales mientras el informe no esté cerrado.
 - **Estados:** `abierto` → `en_revision` → `cerrado`. Los informes no se borran: se cierran y quedan como antecedente.
@@ -21,7 +21,9 @@ Proyecto de **Prácticas Profesionalizantes 2026** · 6° 2° Computación.
 - **Paginación** de 10 informes por página, con **búsqueda** (título, alumno, DNI o curso), **filtros por estado** y contadores.
 - **Vista de detalle** de cada informe con sus intervenciones, el avance (emitido → descargo → revisión → cerrado) y las acciones según el rol.
 - **Diseño adaptado al celular**: barra inferior y botón para crear informes.
-- **Vínculo alumno–tutor** al registrarse, para que cada familia vea solo lo que le corresponde.
+- **Padres y tutores sin cuenta:** el alumno guarda los datos de contacto de su responsable (nombre, correo, teléfono) y este recibe por correo un resumen al crearse el informe y cuando cambia de estado.
+- **Plazo para el descargo:** cada informe individual da 5 días hábiles al alumno (aviso, recordatorio a mitad de plazo); al vencer pasa solo a revisión y a los 15 días se cierra automáticamente. Los informes anteriores a esta función no se modifican.
+- **Gestión de usuarios** (Gestor/Directivo): alta de cuentas, estado de la contraseña y restablecimiento.
 
 ## Roles
 
@@ -33,7 +35,7 @@ Proyecto de **Prácticas Profesionalizantes 2026** · 6° 2° Computación.
 | Asesoría Pedagógica / DOE / PAT | Todos los informes | Redactar el texto del PAT |
 | Secretaría | Todos los informes | Consulta |
 | Alumno | Sus informes, los de su curso y los generales | Redactar su descargo |
-| Padre / Tutor | Informes de sus hijos, de sus cursos y los generales | Consulta y descarga en PDF |
+| Padre / Tutor | Sin cuenta | Recibe avisos por correo |
 
 ## Tecnologías
 
@@ -55,13 +57,15 @@ SIE/
 │   ├── middleware/auth.js      # Verificación de JWT y autorización por rol
 │   ├── models/                 # Acceso a datos (User, Report)
 │   ├── routes/                 # /api/auth y /api/reports
+│   ├── services/               # Mails (Resend), claves temporales y ciclo de vida de los informes
+│   ├── repositories/           # Acceso a datos del ciclo de vida
 │   └── index.js                # Servidor Express
 └── frontend/
     └── src/
         ├── api/axios.js        # Cliente HTTP con el token
         ├── components/         # AppShell, ReportCard, ReportDetail, ReportForm, AuthLayout y ui
         ├── context/AuthContext.jsx
-        └── pages/              # Login, Registro y Panel (Dashboard)
+        └── pages/              # Login, cambio de clave y Panel (Dashboard, con la sección Usuarios)
 ```
 
 ## Instalación local
@@ -89,6 +93,11 @@ Crear `backend/.env`:
 PORT=5000
 JWT_SECRET=una_clave_larga_y_secreta
 CORS_ORIGIN=http://localhost:5173
+# Correo (opcional; sin esto no se envían mails y el gestor ve la clave temporal en pantalla)
+# RESEND_API_KEY=re_xxxxxxxx
+# MAIL_FROM=SIE <alertas@tu-dominio-verificado>
+# DESCARGO_DIAS_HABILES=5
+# CIERRE_DIAS=15
 # Opción A: URL de conexión completa (la que usa Railway)
 MYSQL_DATABASE=mysql://usuario:clave@host:3306/sistema_informes
 # Opción B: sin MYSQL_DATABASE, se conecta a la base "sistema_informes" con estos datos
@@ -127,13 +136,12 @@ La aplicación queda en `http://localhost:5173`.
 
 | Método | Ruta | Acceso | Descripción |
 |---|---|---|---|
-| POST | `/api/auth/register` | Público | Registro de usuario |
 | POST | `/api/auth/login` | Público | Inicio de sesión, devuelve el token |
 | GET | `/api/auth/alumnos` | Gestor, Directivo, Profesor, Preceptor, Regente | Listado de alumnos |
 | GET | `/api/auth/users` | Gestor, Directivo | Listado de usuarios |
-| GET | `/api/auth/padres` | Público | Tutores (para el registro de alumnos) |
-| GET | `/api/auth/alumnos-sin-padre` | Público | Alumnos sin tutor (para el registro de tutores) |
-| POST | `/api/auth/link-hijos` | El propio tutor, Gestor o Directivo | Vincula alumnos a un tutor |
+| POST | `/api/auth/users` | Gestor, Directivo | Crea una cuenta y envía la contraseña temporal por correo |
+| POST | `/api/auth/users/:id/reset-password` | Gestor, Directivo | Restablece la contraseña (nueva temporal por correo) |
+| POST | `/api/auth/change-password` | Autenticado | Cambia la contraseña (obligatorio con una temporal) |
 | GET | `/api/reports?page=&limit=&estado=&q=` | Autenticado | Informes visibles para el usuario, paginados, con filtro por estado, búsqueda y cantidad por estado (`counts`) |
 | POST | `/api/reports` | Gestor, Directivo, Profesor, Preceptor, Regente | Crear informe |
 | PUT | `/api/reports/:id` | Cada rol edita su propio campo; docentes solo en sus informes | Editar informe (no si está cerrado) |
@@ -144,7 +152,7 @@ La aplicación queda en `http://localhost:5173`.
 ## Despliegue
 
 - **Frontend (Netlify):** directorio base `frontend`, comando `npm run build`, carpeta publicada `frontend/dist`, variable `REACT_APP_API_URL` con la URL pública de la API.
-- **Backend (Railway):** directorio `backend`, comando `npm start`, variables `MYSQL_DATABASE` (URL de la base MySQL de Railway) y `JWT_SECRET`. `CORS_ORIGIN` es opcional.
+- **Backend (Railway):** directorio `backend`, comando `npm start`, variables `MYSQL_DATABASE` (URL de la base MySQL de Railway) y `JWT_SECRET`. Para el correo, `RESEND_API_KEY` y `MAIL_FROM` (Railway bloquea SMTP: se usa la API HTTPS de Resend). `CORS_ORIGIN`, `DESCARGO_DIAS_HABILES` y `CIERRE_DIAS` son opcionales. Las migraciones de la base se aplican solas al arrancar.
 
 ## Documentación del proyecto
 
@@ -161,7 +169,7 @@ La gestión de tareas se lleva en ClickUp (espacio *Mensajería E.T. 35*).
 
 ## Próximas mejoras
 
-- Notificaciones automáticas por correo a tutor, alumno y PAT.
+- Recuperación de contraseña autónoma y carga masiva de cuentas.
 - Confirmación de lectura del tutor.
 - Recuperación de contraseña por correo.
 - Alta de roles de conducción habilitada solo por la administración.
