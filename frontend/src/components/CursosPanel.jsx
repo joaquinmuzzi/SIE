@@ -41,12 +41,23 @@ const CursosPanel = ({ cursos, recargar }) => {
     }
   };
 
+  const cambiar = async (c, campo, valor) => {
+    setAviso(null);
+    try {
+      await api.put(`/cursos/${c._id}`, { [campo]: valor });
+      setAviso({ tipo: 'ok', texto: `Curso ${c.etiqueta} actualizado.` });
+      recargar();
+    } catch (err) {
+      setAviso({ tipo: 'error', texto: err.response?.data?.message || 'No se pudo actualizar el curso' });
+    }
+  };
+
   const estilos = { ok: 'bg-emerald-50 border-emerald-200 text-emerald-800', error: 'bg-red-50 border-red-200 text-red-700' };
 
   return (
     <div>
       <p className="text-sm font-normal text-slate-500">
-        Lista oficial de cursos de la escuela. Los desplegables de «Nueva cuenta» (curso del alumno) y de los informes a un curso salen de acá, para que no haya cursos mal escritos.
+        Lista oficial de cursos de la escuela (el turno y la especialidad se cambian desde la tabla). Los desplegables de «Nueva cuenta» (curso del alumno) y de los informes a un curso salen de acá, para que no haya cursos mal escritos.
       </p>
 
       {aviso && <div className={`mt-4 border rounded-sm px-4 py-3 text-sm font-medium ${estilos[aviso.tipo]}`}>{aviso.texto}</div>}
@@ -96,8 +107,18 @@ const CursosPanel = ({ cursos, recargar }) => {
             {cursos.map((c) => (
               <tr key={c._id}>
                 <td className="px-4 py-3 font-medium text-slate-900">{c.etiqueta}</td>
-                <td className="px-4 py-3 text-slate-600">{c.turno}</td>
-                <td className="px-4 py-3 text-slate-600">{c.especialidad || '—'}</td>
+                <td className="px-4 py-2">
+                  <select className="bg-white border border-slate-200 rounded-sm px-2 py-1.5 text-sm text-slate-700" value={c.turno} onChange={(e) => cambiar(c, 'turno', e.target.value)} aria-label={`Turno de ${c.etiqueta}`}>
+                    {['Mañana', 'Tarde', 'Noche'].map((t) => <option key={t}>{t}</option>)}
+                  </select>
+                </td>
+                <td className="px-4 py-2">
+                  <select className="bg-white border border-slate-200 rounded-sm px-2 py-1.5 text-sm text-slate-700" value={c.especialidad || ''} onChange={(e) => cambiar(c, 'especialidad', e.target.value)} aria-label={`Especialidad de ${c.etiqueta}`}>
+                    <option value="">Sin especialidad</option>
+                    <option>Computación</option>
+                    <option>Automotores</option>
+                  </select>
+                </td>
                 <td className="px-4 py-3 text-slate-600">{c.alumnos}</td>
                 <td className="px-4 py-3 text-right">
                   <button onClick={() => eliminar(c)} className="inline-flex items-center gap-1 text-slate-400 hover:text-red-700 font-medium" title="Eliminar (solo si no tiene alumnos ni informes)">

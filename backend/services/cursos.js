@@ -1,11 +1,11 @@
 // Catalogo de cursos: etiqueta legible y lectura de las etiquetas que ya existian como texto libre.
-// Etiqueta: "6° 2°" (año 6, division 2), "3° A" (division con letra) y, si no es del turno mañana, "6° 2° (Tarde)".
+// Etiqueta: "6° 2°" (año 6, division 2) o "3° A" (division con letra). Las divisiones no se repiten entre turnos,
+// asi que el turno es un dato del curso y no forma parte de su nombre.
 const TURNOS = ['Mañana', 'Tarde', 'Noche'];
 const ESPECIALIDADES = ['Computación', 'Automotores'];
 
-function etiquetaCurso({ anio, division, turno }) {
-  const base = /^\d+$/.test(String(division)) ? `${anio}° ${division}°` : `${anio}° ${division}`;
-  return turno && turno !== 'Mañana' ? `${base} (${turno})` : base;
+function etiquetaCurso({ anio, division }) {
+  return /^\d+$/.test(String(division)) ? `${anio}° ${division}°` : `${anio}° ${division}`;
 }
 
 /** Interpreta un curso escrito a mano ("6° 2°", "6°2", "3° a"). Devuelve null si no se puede leer. */
@@ -29,12 +29,17 @@ function validarCurso({ anio, division, turno, especialidad }) {
 
 // Divisiones por año del catalogo inicial. 1°, 2°, 3° y 6° son datos de la escuela; 4° y 5° quedan provisoriamente con 2.
 const DIVISIONES_POR_ANIO = { 1: 10, 2: 9, 3: 9, 4: 2, 5: 2, 6: 3 };
+// Cursos que se sabe que cursan a la tarde (6° 1° y 6° 2°); el resto queda en turno mañana hasta que el gestor lo ajuste
+const TURNO_TARDE = ['6-1', '6-2'];
 
 /** Catalogo inicial: divisiones numeradas por año (turno mañana, sin especialidad hasta que el gestor lo ajuste). */
 function catalogoBase() {
   const cursos = [];
   for (const [anio, cantidad] of Object.entries(DIVISIONES_POR_ANIO)) {
-    for (let d = 1; d <= cantidad; d++) cursos.push({ anio: Number(anio), division: String(d), turno: 'Mañana', especialidad: '' });
+    for (let d = 1; d <= cantidad; d++) {
+      const turno = TURNO_TARDE.includes(`${anio}-${d}`) ? 'Tarde' : 'Mañana';
+      cursos.push({ anio: Number(anio), division: String(d), turno, especialidad: '' });
+    }
   }
   return cursos;
 }

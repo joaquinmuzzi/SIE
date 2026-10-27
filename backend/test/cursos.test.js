@@ -6,7 +6,10 @@ const { etiquetaCurso, leerEtiqueta, validarCurso, catalogoBase } = require('../
 describe('etiquetaCurso', () => {
   test('[correcto] division numerica: "6° 2°"', () => assert.equal(etiquetaCurso({ anio: 6, division: '2', turno: 'Mañana' }), '6° 2°'));
   test('[correcto] division con letra: "3° A"', () => assert.equal(etiquetaCurso({ anio: 3, division: 'A', turno: 'Mañana' }), '3° A'));
-  test('[correcto] fuera del turno mañana se aclara el turno', () => assert.equal(etiquetaCurso({ anio: 6, division: '2', turno: 'Tarde' }), '6° 2° (Tarde)'));
+  test('[correcto] el turno no forma parte del nombre del curso', () => {
+    assert.equal(etiquetaCurso({ anio: 6, division: '2', turno: 'Tarde' }), '6° 2°');
+    assert.equal(etiquetaCurso({ anio: 6, division: '2', turno: 'Mañana' }), '6° 2°');
+  });
 });
 
 describe('leerEtiqueta (cursos que estaban como texto libre)', () => {
@@ -47,6 +50,10 @@ describe('catalogoBase', () => {
   test('[correcto] todos son válidos para el catálogo y no hay repetidos', () => {
     assert.ok(base.every((c) => validarCurso(c).ok));
     assert.equal(new Set(base.map(etiquetaCurso)).size, base.length);
+  });
+  test('[correcto] 6° 1° y 6° 2° cursan a la tarde y el resto del catálogo a la mañana', () => {
+    const tarde = base.filter((c) => c.turno === 'Tarde').map(etiquetaCurso);
+    assert.deepEqual(tarde, ['6° 1°', '6° 2°']);
   });
   test('[correcto] incluye los cursos de la demo (4° 1°, 5° 1° y 6° 2°)', () => {
     const e = base.map(etiquetaCurso);

@@ -25,11 +25,35 @@ exports.crearCurso = async (req, res) => {
     if (!v.ok) return res.status(400).json({ message: v.message });
     const { anio, division, turno, especialidad } = v.curso;
 
-    const [[existe]] = await pool.query('SELECT COUNT(*) AS n FROM cursos WHERE anio = ? AND division = ? AND turno = ?', [anio, division, turno]);
+    // Las divisiones no se repiten entre turnos: un año+division es un unico curso
+    const [[existe]] = await pool.query('SELECT COUNT(*) AS n FROM cursos WHERE anio = ? AND division = ?', [anio, division]);
     if (existe.n > 0) return res.status(400).json({ message: `El curso ${etiquetaCurso(v.curso)} ya existe` });
 
     const [r] = await pool.query('INSERT INTO cursos (anio, division, turno, especialidad) VALUES (?, ?, ?, ?)', [anio, division, turno, especialidad]);
     res.status(201).json(conEtiqueta({ _id: r.insertId, ...v.curso, alumnos: 0 }));
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Cambia el turno y/o la especialidad de un curso (el año y la division no se editan: son su identidad)
+exports.actualizarCurso = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ message: 'El id del curso no es valido' });
+    const [[curso]] = await pool.query('SELECT id_curso, anio, division, turno, especialidad FROM cursos WHERE id_curso = ?', [id]);
+    if (!curso) return res.status(404).json({ message: 'Curso no encontrado' });
+
+    const v = validarCurso({
+      anio: curso.anio,
+      division: curso.division,
+      turno: req.body.turno !== undefined ? req.body.turno : curso.turno,
+      especialidad: req.body.especialidad !== undefined ? req.body.especialidad : curso.especialidad,
+    });
+    if (!v.ok) return res.status(400).json({ message: v.message });
+
+    await pool.query('UPDATE cursos SET turno = ?, especialidad = ? WHERE id_curso = ?', [v.curso.turno, v.curso.especialidad, id]);
+    res.json(conEtiqueta({ _id: id, ...v.curso }));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

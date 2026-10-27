@@ -87,10 +87,14 @@ async function migrarCursosExistentes() {
   for (const { texto } of textos) {
     const c = leerEtiqueta(texto);
     if (!c) { console.warn(`[migracion] curso no interpretable, queda como texto: "${texto}"`); continue; }
-    const [r] = await pool.query('INSERT IGNORE INTO cursos (anio, division, turno) VALUES (?, ?, ?)', [c.anio, c.division, 'Mañana']);
+    // Las divisiones no se repiten entre turnos: si ya existe ese año+division (en cualquier turno), no se crea otro
+    const [r] = await pool.query(
+      'INSERT INTO cursos (anio, division, turno) SELECT ?, ?, ? FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM cursos WHERE anio = ? AND division = ?)',
+      [c.anio, c.division, 'Mañana', c.anio, c.division]
+    );
     nuevos += r.affectedRows;
   }
-  const [cursos] = await pool.query("SELECT id_curso, anio, division, turno FROM cursos WHERE turno = 'Mañana'");
+  const [cursos] = await pool.query('SELECT id_curso, anio, division, turno FROM cursos');
   let enlazados = 0;
   for (const c of cursos) {
     const [r] = await pool.query("UPDATE usuarios SET id_curso = ?, curso = ? WHERE rol = 'alumno' AND id_curso IS NULL AND curso IN (?)",
