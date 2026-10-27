@@ -8,6 +8,7 @@ import ReportCard, { EncabezadoLista } from '../components/ReportCard';
 import ReportDetail from '../components/ReportDetail';
 import ReportForm from '../components/ReportForm';
 import UsuariosPanel from '../components/UsuariosPanel';
+import MiCuenta from '../components/MiCuenta';
 
 const PAGE_SIZE = 10;
 const FILTROS = [['', 'Todos'], ['abierto', 'Abiertos'], ['en_revision', 'En revisión'], ['cerrado', 'Cerrados']];
@@ -23,7 +24,7 @@ const Dashboard = () => {
   const [busquedaAplicada, setBusquedaAplicada] = useState('');
   const [cargando, setCargando] = useState(true);
   const [alumnos, setAlumnos] = useState([]);
-  // vista: 'lista' | 'detalle' | 'form' | 'usuarios'
+  // vista: 'lista' | 'detalle' | 'form' | 'usuarios' | 'cuenta'
   const [vista, setVista] = useState('lista');
   const [seleccionado, setSeleccionado] = useState(null);
   const [editando, setEditando] = useState(null);
@@ -149,6 +150,8 @@ const Dashboard = () => {
   let contenido;
   if (vista === 'usuarios') {
     contenido = <UsuariosPanel user={user} />;
+  } else if (vista === 'cuenta') {
+    contenido = <MiCuenta />;
   } else if (vista === 'form') {
     contenido = (
       <ReportForm
@@ -251,7 +254,7 @@ const Dashboard = () => {
   }
 
   return (
-    <AppShell user={user} counts={counts} canCreate={canCreate} vista={vista} onNuevo={nuevo} onInicio={irALista} onUsuarios={isAdmin ? () => setVista('usuarios') : undefined} onLogout={logout}>
+    <AppShell user={user} counts={counts} canCreate={canCreate} vista={vista} onNuevo={nuevo} onInicio={irALista} onUsuarios={isAdmin ? () => setVista('usuarios') : undefined} onCuenta={() => setVista('cuenta')} onLogout={logout}>
       {contenido}
     </AppShell>
   );

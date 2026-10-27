@@ -1,4 +1,4 @@
-import { Inbox, LogOut, Plus, Users } from 'lucide-react';
+import { Inbox, LogOut, Plus, UserCog, Users } from 'lucide-react';
 import { ROLES, iniciales, nombreCompleto } from './ui';
 
 const Contador = ({ n, texto, punto }) => (
@@ -12,8 +12,9 @@ const Contador = ({ n, texto, punto }) => (
 );
 
 // Estructura comun del panel: lateral fijo de alto completo en compu, encabezado y barra inferior en celular
-const AppShell = ({ user, counts, canCreate, vista, onNuevo, onInicio, onUsuarios, onLogout, children }) => {
+const AppShell = ({ user, counts, canCreate, vista, onNuevo, onInicio, onUsuarios, onCuenta, onLogout, children }) => {
   const enUsuarios = vista === 'usuarios';
+  const enCuenta = vista === 'cuenta';
   const rol = ROLES[user.rol] || user.rol;
   const detalle = user.cargo || user.curso;
 
@@ -28,16 +29,21 @@ const AppShell = ({ user, counts, canCreate, vista, onNuevo, onInicio, onUsuario
           </div>
         </div>
 
-        <div className="flex items-center gap-3 mt-8">
+        <button
+          onClick={onCuenta}
+          title="Mi cuenta y cambio de contraseña"
+          className={`flex items-center gap-3 mt-8 -mx-2 px-2 py-2 rounded-sm text-left hover:bg-white/5 ${enCuenta ? 'bg-white/10' : ''}`}
+        >
           <div className="w-12 h-12 shrink-0 rounded-sm bg-brand text-white grid place-items-center text-lg font-semibold">
             {iniciales(user)}
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="font-semibold text-white truncate">{nombreCompleto(user)}</p>
             <p className="text-sm text-slate-400 truncate">{rol}</p>
             {detalle && <p className="text-xs text-slate-500 truncate" title={detalle}>{detalle}</p>}
           </div>
-        </div>
+          <UserCog size={16} className="shrink-0 text-slate-500" />
+        </button>
 
         <div className="grid grid-cols-3 gap-2 mt-6">
           <Contador n={counts.abierto} texto="Abiertos" punto="bg-teal-400" />
@@ -55,7 +61,7 @@ const AppShell = ({ user, counts, canCreate, vista, onNuevo, onInicio, onUsuario
         )}
 
         <nav className="mt-6 space-y-1 font-medium">
-          <button onClick={onInicio} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-sm ${enUsuarios ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'bg-white/10 text-white border-l-2 border-brand'}`}>
+          <button onClick={onInicio} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-sm ${enUsuarios || enCuenta ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'bg-white/10 text-white border-l-2 border-brand'}`}>
             <Inbox size={18} /> Informes
           </button>
           {onUsuarios && (
@@ -73,8 +79,8 @@ const AppShell = ({ user, counts, canCreate, vista, onNuevo, onInicio, onUsuario
       <div className="lg:pl-72">
         <main className="max-w-5xl mx-auto px-5 pt-6 pb-28 lg:px-10 lg:py-10">
           <div className="flex items-center gap-3 lg:hidden mb-5">
-            <div className="w-11 h-11 shrink-0 rounded-sm bg-brand text-white grid place-items-center font-semibold">{iniciales(user)}</div>
-            <div className="flex-1 min-w-0">
+            <div onClick={onCuenta} className="w-11 h-11 shrink-0 rounded-sm bg-brand text-white grid place-items-center font-semibold cursor-pointer">{iniciales(user)}</div>
+            <div onClick={onCuenta} className="flex-1 min-w-0 cursor-pointer" title="Mi cuenta">
               <p className="text-sm text-slate-500 truncate">{[rol, detalle].filter(Boolean).join(' · ')}</p>
               <p className="font-semibold text-lg -mt-0.5 truncate">{nombreCompleto(user)}</p>
             </div>

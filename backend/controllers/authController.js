@@ -4,6 +4,10 @@ const { pool } = require('../config/db');
 const { generarClaveTemporal } = require('../services/claves');
 const mailer = require('../services/mailer');
 const mensajes = require('../services/mensajes');
+const { crearLimitador } = require('../services/limiteIntentos');
+
+// 5 contrasenas actuales equivocadas en 15 minutos bloquean el cambio de clave de ese usuario
+const limiteCambioClave = crearLimitador({ max: 5, ventanaMs: 15 * 60 * 1000 });
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
@@ -163,8 +167,13 @@ exports.deleteUser = async (req, res) => {
 exports.changePassword = async (req, res) => {
   const { actual, nueva } = req.body;
   try {
+    const espera = limiteCambioClave.bloqueadoPor(req.user.id_usuario);
+    if (espera) {
+      return res.status(429).json({ message: `Demasiados intentos con la contrasena actual. Probá de nuevo en ${espera} minuto(s).` });
+    }
     const user = await User.findById(req.user.id_usuario);
     if (!actual || !nueva || !(await user.matchPassword(actual))) {
+      limiteCambioClave.registrarFallo(req.user.id_usuario);
       return res.status(400).json({ message: 'La contrasena actual no es correcta' });
     }
     if (String(nueva).length < 8 || !/[A-Za-z]/.test(nueva) || !/\d/.test(nueva)) {
@@ -174,6 +183,9 @@ exports.changePassword = async (req, res) => {
       return res.status(400).json({ message: 'La contrasena nueva debe ser distinta de la actual' });
     }
     await User.setPassword(user.id_usuario, nueva, false);
+    limiteCambioClave.limpiar(req.user.id_usuario);
+    // Aviso al dueño de la cuenta por si el cambio no lo hizo el: no bloquea la respuesta
+    mailer.enviar({ para: user.email, ...mensajes.claveCambiada({ nombre: user.nombre }) }).catch(() => {});
     res.json({ message: 'Contrasena actualizada' });
   } catch (error) {
     res.status(500).json({ message: error.message });

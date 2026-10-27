@@ -59,4 +59,11 @@ const cambioEstadoResponsable = ({ nombreResponsable, nombreAlumno, informe, est
     `El informe «${informe.titulo}» sobre ${nombreAlumno} ahora está: ${ESTADO[estado] || estado}.`,
   ]);
 
-module.exports = { claveTemporal, avisoDescargoAlumno, recordatorioDescargo, descargoVencido, avisoResponsable, cambioEstadoResponsable };
+const claveCambiada = ({ nombre }) =>
+  armar('SIE: tu contraseña fue cambiada', [
+    `Hola ${nombre}:`,
+    'Te avisamos que la contraseña de tu cuenta del Sistema de Informes Escolares fue cambiada recién.',
+    'Si fuiste vos, no tenés que hacer nada. Si no reconocés este cambio, avisale de inmediato al gestor o directivo de la escuela para que restablezca tu contraseña.',
+  ], { texto: 'Ingresar al sistema', url: APP_URL() });
+
+module.exports = { claveCambiada, claveTemporal, avisoDescargoAlumno, recordatorioDescargo, descargoVencido, avisoResponsable, cambioEstadoResponsable };
