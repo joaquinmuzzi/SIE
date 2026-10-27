@@ -2,18 +2,19 @@ import { useEffect, useState } from 'react';
 import { KeyRound, MailCheck, MailWarning, Trash2, UserPlus } from 'lucide-react';
 import api from '../api/axios';
 import { ROLES, nombreCompleto } from './ui';
+import CursosPanel from './CursosPanel';
 
 const ENTRADA = 'w-full bg-white border border-slate-300 rounded-sm px-3 py-2.5 font-normal focus:outline-none focus:ring-2 focus:ring-brand';
 const ETIQUETA = 'block text-sm font-semibold text-slate-700 mb-1';
 const ROLES_CREABLES = ['alumno', 'profesor', 'preceptor', 'regente', 'asesoria_pedagogica', 'secretaria', 'directivo', 'gestor'];
 const ROLES_CON_CARGO = ['gestor', 'directivo', 'regente'];
 const VACIO = {
-  nombre: '', apellido: '', email: '', rol: 'alumno', dni: '', telefono: '', cargo: '', curso: '',
+  nombre: '', apellido: '', email: '', rol: 'alumno', dni: '', telefono: '', cargo: '', id_curso: '',
   responsable_nombre: '', responsable_email: '', responsable_telefono: '',
 };
 
 // Alta de cuentas (gestor/directivo): la clave temporal se genera sola y le llega al correo de la persona
-const UsuariosPanel = ({ user }) => {
+const ListaUsuarios = ({ user, cursos }) => {
   const [usuarios, setUsuarios] = useState([]);
   const [form, setForm] = useState(VACIO);
   const [abierto, setAbierto] = useState(false);
@@ -131,7 +132,13 @@ const UsuariosPanel = ({ user }) => {
               <div><label className={ETIQUETA}>Cargo</label><input className={ENTRADA} value={form.cargo} onChange={set('cargo')} /></div>
             )}
             {form.rol === 'alumno' && (
-              <div><label className={ETIQUETA}>Curso</label><input className={ENTRADA} value={form.curso} onChange={set('curso')} placeholder="Ej: 5° 1°" /></div>
+              <div>
+                <label className={ETIQUETA}>Curso</label>
+                <select className={ENTRADA} value={form.id_curso} onChange={set('id_curso')} required>
+                  <option value="">{cursos.length ? 'Elegir curso...' : 'Primero cargá los cursos'}</option>
+                  {cursos.map((c) => <option key={c._id} value={c._id}>{c.etiqueta}{c.especialidad ? ` · ${c.especialidad}` : ''}</option>)}
+                </select>
+              </div>
             )}
           </div>
 
@@ -191,6 +198,38 @@ const UsuariosPanel = ({ user }) => {
           </tbody>
         </table>
       </div>
+    </div>
+  );
+};
+
+// Usuarios y catalogo de cursos, en dos pestañas
+const UsuariosPanel = ({ user }) => {
+  const [pestania, setPestania] = useState('usuarios');
+  const [cursos, setCursos] = useState([]);
+  const cargarCursos = () => api.get('/cursos').then(({ data }) => setCursos(data)).catch(() => {});
+  useEffect(() => { cargarCursos(); }, []);
+
+  const pestaña = (id, texto) => (
+    <button
+      onClick={() => setPestania(id)}
+      className={`px-4 py-2 rounded-sm font-semibold text-sm ${pestania === id ? 'bg-slate-900 text-white' : 'bg-white border border-slate-200 text-slate-500'}`}
+    >
+      {texto}
+    </button>
+  );
+
+  return (
+    <div>
+      <div className="flex gap-2 mb-5">
+        {pestaña('usuarios', 'Usuarios')}
+        {pestaña('cursos', `Cursos (${cursos.length})`)}
+      </div>
+      {pestania === 'usuarios' ? <ListaUsuarios user={user} cursos={cursos} /> : (
+        <div>
+          <h1 className="text-3xl font-semibold text-slate-900">Cursos</h1>
+          <CursosPanel cursos={cursos} recargar={cargarCursos} />
+        </div>
+      )}
     </div>
   );
 };

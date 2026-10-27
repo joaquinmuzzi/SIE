@@ -2,6 +2,12 @@ const Report = require('../models/Report');
 const mailer = require('../services/mailer');
 const mensajes = require('../services/mensajes');
 const { sumarDiasHabiles, config } = require('../services/ciclo');
+const { pool } = require('../config/db');
+const { etiquetaCurso } = require('../services/cursos');
+const historial = require('../repositories/historialRepository');
+
+// El historial es un registro auxiliar: si falla, no debe romper la operacion
+const anotar = (datos) => historial.registrar(datos).catch((e) => console.error('[historial]', e.message));
 
 const nombreCompleto = (u) => `${u.nombre || ''} ${u.apellido || ''}`.trim();
 
@@ -41,6 +47,10 @@ exports.getReports = async (req, res) => {
     const q = String(req.query.q || '').trim().slice(0, 100);
     if (q) {
       filters.q = q;
+    }
+    const cursoFiltro = String(req.query.curso || '').trim().slice(0, 40);
+    if (cursoFiltro && rol !== 'alumno') {
+      filters.cursoFiltro = cursoFiltro;
     }
 
     const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
@@ -85,8 +95,14 @@ exports.createReport = async (req, res) => {
     if (alcanceFinal === 'individual' && !id_alumno) {
       return res.status(400).json({ message: 'El alumno es obligatorio para crear un informe individual' });
     }
-    if (alcanceFinal === 'curso' && !curso_destino) {
-      return res.status(400).json({ message: 'El curso destino es obligatorio para un informe de curso' });
+    if (alcanceFinal === 'curso') {
+      if (!curso_destino) {
+        return res.status(400).json({ message: 'El curso destino es obligatorio para un informe de curso' });
+      }
+      const [cursos] = await pool.query('SELECT anio, division, turno FROM cursos');
+      if (!cursos.some((c) => etiquetaCurso(c) === curso_destino)) {
+        return res.status(400).json({ message: 'El curso destino no existe en el catalogo de cursos' });
+      }
     }
 
     const report = await Report.create({
@@ -106,6 +122,7 @@ exports.createReport = async (req, res) => {
     if (report.alcance === 'individual' && report.alumno._id) {
       avisarNuevoInforme(report).catch((e) => console.error('[aviso informe]', e.message));
     }
+    anotar({ idInforme: report._id, usuarioId: req.user.id_usuario, accion: 'creado', estadoNuevo: report.estado });
     res.status(201).json(report);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -155,6 +172,13 @@ exports.updateReport = async (req, res) => {
     }
 
     const updatedReport = await Report.update(req.params.id, updateData);
+    const campos = Object.keys(updateData).filter((k) => updateData[k] !== undefined);
+    if (campos.length) {
+      anotar({ idInforme: report._id, usuarioId: req.user.id_usuario, accion: 'editado', detalle: campos.join(', ').slice(0, 250) });
+    }
+    if (updatedReport.estado !== report.estado) {
+      anotar({ idInforme: report._id, usuarioId: req.user.id_usuario, accion: 'estado', estadoAnterior: report.estado, estadoNuevo: updatedReport.estado });
+    }
     res.json(updatedReport);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -190,6 +214,7 @@ exports.addDescargo = async (req, res) => {
     const updatedReport = await Report.update(req.params.id, {
       descargo_alumno: req.body.descargo_alumno,
     });
+    anotar({ idInforme: report._id, usuarioId: req.user.id_usuario, accion: 'descargo' });
     res.json(updatedReport);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -204,6 +229,9 @@ exports.deleteReport = async (req, res) => {
     }
 
     const updatedReport = await Report.softDelete(req.params.id);
+    if (report.estado !== 'cerrado') {
+      anotar({ idInforme: report._id, usuarioId: req.user.id_usuario, accion: 'estado', estadoAnterior: report.estado, estadoNuevo: 'cerrado' });
+    }
     res.json({ message: 'Informe cerrado', informe: updatedReport });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -225,6 +253,7 @@ exports.changeState = async (req, res) => {
 
     const updatedReport = await Report.update(req.params.id, { estado });
     if (estado !== report.estado) {
+      anotar({ idInforme: report._id, usuarioId: req.user.id_usuario, accion: 'estado', estadoAnterior: report.estado, estadoNuevo: estado });
       avisarCambioEstado(updatedReport).catch((e) => console.error('[aviso estado]', e.message));
     }
     res.json(updatedReport);

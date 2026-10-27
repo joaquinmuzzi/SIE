@@ -1,4 +1,4 @@
-import { Inbox, LogOut, Plus, Settings, Users } from 'lucide-react';
+import { BarChart3, Inbox, LogOut, Plus, Settings, Users } from 'lucide-react';
 import { ROLES, iniciales, nombreCompleto } from './ui';
 
 const Contador = ({ n, texto, punto }) => (
@@ -12,8 +12,9 @@ const Contador = ({ n, texto, punto }) => (
 );
 
 // Estructura comun del panel: lateral fijo de alto completo en compu, encabezado y barra inferior en celular
-const AppShell = ({ user, counts, canCreate, vista, onNuevo, onInicio, onUsuarios, onCuenta, onLogout, children }) => {
+const AppShell = ({ user, counts, canCreate, vista, onNuevo, onInicio, onUsuarios, onCuenta, onEstadisticas, onLogout, children }) => {
   const enUsuarios = vista === 'usuarios';
+  const enEstadisticas = vista === 'estadisticas';
   const enCuenta = vista === 'cuenta';
   const rol = ROLES[user.rol] || user.rol;
   const detalle = user.cargo || user.curso;
@@ -56,9 +57,14 @@ const AppShell = ({ user, counts, canCreate, vista, onNuevo, onInicio, onUsuario
         )}
 
         <nav className="mt-6 space-y-1 font-medium">
-          <button onClick={onInicio} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-sm ${enUsuarios || enCuenta ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'bg-white/10 text-white border-l-2 border-brand'}`}>
+          <button onClick={onInicio} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-sm ${enUsuarios || enCuenta || enEstadisticas ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'bg-white/10 text-white border-l-2 border-brand'}`}>
             <Inbox size={18} /> Informes
           </button>
+          {onEstadisticas && (
+            <button onClick={onEstadisticas} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-sm ${enEstadisticas ? 'bg-white/10 text-white border-l-2 border-brand' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
+              <BarChart3 size={18} /> Estadísticas
+            </button>
+          )}
           {onUsuarios && (
             <button onClick={onUsuarios} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-sm ${enUsuarios ? 'bg-white/10 text-white border-l-2 border-brand' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
               <Users size={18} /> Usuarios
@@ -98,7 +104,7 @@ const AppShell = ({ user, counts, canCreate, vista, onNuevo, onInicio, onUsuario
       </div>
 
       <nav className="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 h-20 px-6 grid items-center" style={{ gridTemplateColumns: `repeat(${onUsuarios ? 5 : 4}, minmax(0, 1fr))` }}>
-        <button onClick={onInicio} className={`flex flex-col items-center gap-0.5 text-[11px] font-medium ${enUsuarios || enCuenta ? 'text-slate-500' : 'text-brand'}`}>
+        <button onClick={onInicio} className={`flex flex-col items-center gap-0.5 text-[11px] font-medium ${enUsuarios || enCuenta || enEstadisticas ? 'text-slate-500' : 'text-brand'}`}>
           <Inbox size={18} /> Informes
         </button>
         {onUsuarios && (

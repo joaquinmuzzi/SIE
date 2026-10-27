@@ -1,5 +1,8 @@
 // Acceso a datos del ciclo de vida de los informes.
 const { pool } = require('../config/db');
+const historial = require('./historialRepository');
+
+const anotar = (datos) => historial.registrar(datos).catch((e) => console.error('[historial]', e.message));
 
 async function listarActivos() {
   const [filas] = await pool.query(
@@ -14,14 +17,23 @@ async function listarActivos() {
   return filas;
 }
 
-const marcarRecordatorio = (id) =>
-  pool.query('UPDATE informes SET recordatorio_enviado = 1 WHERE id_informe = ?', [id]);
+const marcarRecordatorio = async (id) => {
+  await pool.query('UPDATE informes SET recordatorio_enviado = 1 WHERE id_informe = ?', [id]);
+  anotar({ idInforme: id, accion: 'recordatorio', detalle: 'Recordatorio de descargo enviado al alumno' });
+};
 
 // Al vencer el plazo, el informe pasa a revision (si seguia abierto) y ya no admite descargo
-const marcarVencido = (id) =>
-  pool.query("UPDATE informes SET descargo_vencido = 1, estado = IF(estado = 'abierto', 'en_revision', estado) WHERE id_informe = ?", [id]);
+const marcarVencido = async (id) => {
+  const [[antes]] = await pool.query('SELECT estado FROM informes WHERE id_informe = ?', [id]);
+  await pool.query("UPDATE informes SET descargo_vencido = 1, estado = IF(estado = 'abierto', 'en_revision', estado) WHERE id_informe = ?", [id]);
+  const [[despues]] = await pool.query('SELECT estado FROM informes WHERE id_informe = ?', [id]);
+  anotar({ idInforme: id, accion: 'plazo_vencido', estadoAnterior: antes?.estado, estadoNuevo: despues?.estado, detalle: 'Venció el plazo de descargo' });
+};
 
-const cerrar = (id) =>
-  pool.query("UPDATE informes SET estado = 'cerrado' WHERE id_informe = ?", [id]);
+const cerrar = async (id) => {
+  const [[antes]] = await pool.query('SELECT estado FROM informes WHERE id_informe = ?', [id]);
+  await pool.query("UPDATE informes SET estado = 'cerrado' WHERE id_informe = ?", [id]);
+  anotar({ idInforme: id, accion: 'cierre_automatico', estadoAnterior: antes?.estado, estadoNuevo: 'cerrado', detalle: 'Cierre automático a los 15 días' });
+};
 
 module.exports = { listarActivos, marcarRecordatorio, marcarVencido, cerrar };

@@ -62,6 +62,12 @@ function buildWhere(filters) {
     andParams.push(filters.estado);
   }
 
+  // Filtro por curso: informes de alumnos de ese curso o dirigidos a ese curso
+  if (filters && filters.cursoFiltro) {
+    andConditions.push('(al.curso = ? OR i.curso_destino = ?)');
+    andParams.push(filters.cursoFiltro, filters.cursoFiltro);
+  }
+
   // Busqueda libre por titulo, alumno (nombre, apellido o DNI) o curso
   if (filters && filters.q) {
     const like = `%${filters.q}%`;

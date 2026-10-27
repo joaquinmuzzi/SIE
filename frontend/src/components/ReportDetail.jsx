@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ArrowLeft, CheckCircle, Clock, Download, MessageSquare, Pencil, Send, Trash2 } from 'lucide-react';
+import HistorialInforme from './HistorialInforme';
 import {
   Avatar, BarraAvance, Etiquetas, ROLES, destinatario, etapaActual, etapas, fechaCorta, intervenciones, nombreCompleto,
 } from './ui';
@@ -113,6 +114,8 @@ const ReportDetail = ({ report, permisos, onBack, onEdit, onChangeState, onClose
           </button>
         </form>
       )}
+
+      <HistorialInforme idInforme={report._id} />
 
       {error && <p className="mt-4 text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-sm px-3 py-2">{error}</p>}
 

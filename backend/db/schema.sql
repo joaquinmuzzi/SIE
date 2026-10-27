@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
   id_padre      INT            NULL,
   tiene_acceso  TINYINT(1)     NOT NULL DEFAULT 0,
   debe_cambiar_clave   TINYINT(1)   NOT NULL DEFAULT 0,
+  id_curso             INT          NULL,
   responsable_nombre   VARCHAR(150) NULL,
   responsable_email    VARCHAR(150) NULL,
   responsable_telefono VARCHAR(30)  NULL,
@@ -22,6 +23,16 @@ CREATE TABLE IF NOT EXISTS usuarios (
   CONSTRAINT fk_usuarios_padre
     FOREIGN KEY (id_padre) REFERENCES usuarios (id_usuario)
     ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS cursos (
+  id_curso     INT AUTO_INCREMENT PRIMARY KEY,
+  anio         TINYINT      NOT NULL,
+  division     VARCHAR(3)   NOT NULL,
+  turno        VARCHAR(10)  NOT NULL DEFAULT 'Mañana',
+  especialidad VARCHAR(30)  NOT NULL DEFAULT '',
+  created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT uq_cursos UNIQUE (anio, division, turno)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS informes (
@@ -55,6 +66,18 @@ CREATE TABLE IF NOT EXISTS informes (
   CONSTRAINT fk_informes_creado_por
     FOREIGN KEY (creado_por_id) REFERENCES usuarios (id_usuario)
     ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS informe_historial (
+  id_historial    INT AUTO_INCREMENT PRIMARY KEY,
+  id_informe      INT          NOT NULL,
+  usuario_id      INT          NULL,
+  accion          VARCHAR(30)  NOT NULL,
+  estado_anterior VARCHAR(20)  NULL,
+  estado_nuevo    VARCHAR(20)  NULL,
+  detalle         VARCHAR(255) NULL,
+  created_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_historial_informe (id_informe)
 ) ENGINE=InnoDB;
 
 CREATE INDEX idx_informes_fecha ON informes (fecha);

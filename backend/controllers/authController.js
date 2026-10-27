@@ -5,6 +5,7 @@ const { generarClaveTemporal } = require('../services/claves');
 const mailer = require('../services/mailer');
 const mensajes = require('../services/mensajes');
 const { crearLimitador } = require('../services/limiteIntentos');
+const { etiquetaCurso } = require('../services/cursos');
 
 // 5 contrasenas actuales equivocadas en 15 minutos bloquean el cambio de clave de ese usuario
 const limiteCambioClave = crearLimitador({ max: 5, ventanaMs: 15 * 60 * 1000 });
@@ -56,7 +57,7 @@ exports.loginUser = async (req, res) => {
 
 // Alta de cuenta por el gestor/directivo: la clave temporal se genera aca y le llega al mail del usuario
 exports.createUser = async (req, res) => {
-  const { nombre, apellido, email, rol, dni, telefono, cargo, curso, responsable_nombre, responsable_email, responsable_telefono } = req.body;
+  const { nombre, apellido, email, rol, dni, telefono, cargo, id_curso, responsable_nombre, responsable_email, responsable_telefono } = req.body;
 
   try {
     if (!nombre || !apellido || !email) {
@@ -85,13 +86,23 @@ exports.createUser = async (req, res) => {
         return res.status(400).json({ message: 'El correo del responsable no es valido' });
       }
     }
+    let cursoElegido = null;
+    if (rol === 'alumno') {
+      const [[c]] = await pool.query('SELECT id_curso, anio, division, turno FROM cursos WHERE id_curso = ?', [Number(id_curso) || 0]);
+      if (!c) {
+        return res.status(400).json({ message: 'Elegí el curso del alumno de la lista de cursos' });
+      }
+      cursoElegido = c;
+    }
     if (await User.findOne({ email })) {
       return res.status(400).json({ message: 'El usuario ya existe' });
     }
 
     const clave = generarClaveTemporal();
     const user = await User.create({
-      nombre, apellido, email, password: clave, rol, dni, telefono, cargo, curso,
+      nombre, apellido, email, password: clave, rol, dni, telefono, cargo,
+      curso: cursoElegido ? etiquetaCurso(cursoElegido) : null,
+      id_curso: cursoElegido ? cursoElegido.id_curso : null,
       debe_cambiar_clave: true,
       responsable_nombre: rol === 'alumno' ? responsable_nombre : null,
       responsable_email: rol === 'alumno' ? responsable_email : null,
@@ -195,7 +206,7 @@ exports.changePassword = async (req, res) => {
 exports.getAlumnos = async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT id_usuario AS _id, nombre, apellido, email, dni, telefono, curso,
+      `SELECT id_usuario AS _id, nombre, apellido, email, dni, telefono, curso, id_curso,
               responsable_nombre, responsable_email, responsable_telefono
          FROM usuarios WHERE rol = 'alumno'`
     );

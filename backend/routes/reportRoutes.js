@@ -8,11 +8,15 @@ const {
   deleteReport,
   changeState,
 } = require('../controllers/reportController');
+const { getHistorial, getEstadisticas } = require('../controllers/informeExtrasController');
 const { protect, authorize } = require('../middleware/auth');
 
 router.route('/')
   .get(protect, getReports)
   .post(protect, authorize('gestor', 'directivo', 'profesor', 'preceptor', 'regente'), createReport);
+
+router.get('/stats', protect, getEstadisticas);
+router.get('/:id/historial', protect, getHistorial);
 
 router.route('/:id')
   .put(protect, updateReport)

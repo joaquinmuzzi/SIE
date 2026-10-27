@@ -9,6 +9,7 @@ import ReportDetail from '../components/ReportDetail';
 import ReportForm from '../components/ReportForm';
 import UsuariosPanel from '../components/UsuariosPanel';
 import MiCuenta from '../components/MiCuenta';
+import EstadisticasPanel from '../components/EstadisticasPanel';
 
 const PAGE_SIZE = 10;
 const FILTROS = [['', 'Todos'], ['abierto', 'Abiertos'], ['en_revision', 'En revisión'], ['cerrado', 'Cerrados']];
@@ -22,8 +23,10 @@ const Dashboard = () => {
   const [estadoFiltro, setEstadoFiltro] = useState('');
   const [busqueda, setBusqueda] = useState('');
   const [busquedaAplicada, setBusquedaAplicada] = useState('');
+  const [cursoFiltro, setCursoFiltro] = useState('');
   const [cargando, setCargando] = useState(true);
   const [alumnos, setAlumnos] = useState([]);
+  const [cursos, setCursos] = useState([]);
   // vista: 'lista' | 'detalle' | 'form' | 'usuarios' | 'cuenta'
   const [vista, setVista] = useState('lista');
   const [seleccionado, setSeleccionado] = useState(null);
@@ -59,12 +62,14 @@ const Dashboard = () => {
   useEffect(() => {
     fetchReports();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, estadoFiltro, busquedaAplicada]);
+  }, [page, estadoFiltro, busquedaAplicada, cursoFiltro]);
 
   useEffect(() => {
     if (canCreate) {
       api.get('/auth/alumnos').then(({ data }) => setAlumnos(data)).catch(() => {});
     }
+    // El catalogo lo usan los formularios y el filtro por curso (todo el personal)
+    if (user.rol !== 'alumno') api.get('/cursos').then(({ data }) => setCursos(data)).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -74,6 +79,7 @@ const Dashboard = () => {
       const params = { page, limit: PAGE_SIZE };
       if (estadoFiltro) params.estado = estadoFiltro;
       if (busquedaAplicada) params.q = busquedaAplicada;
+      if (cursoFiltro) params.curso = cursoFiltro;
       const { data } = await api.get('/reports', { params });
       setReports(data.reports);
       setTotalPages(data.totalPages || 1);
@@ -152,6 +158,8 @@ const Dashboard = () => {
     contenido = <UsuariosPanel user={user} />;
   } else if (vista === 'cuenta') {
     contenido = <MiCuenta />;
+  } else if (vista === 'estadisticas') {
+    contenido = <EstadisticasPanel cursos={cursos} />;
   } else if (vista === 'form') {
     contenido = (
       <ReportForm
@@ -163,6 +171,7 @@ const Dashboard = () => {
           textoPat: isAdmin || esPat,
         }}
         alumnos={alumnos}
+        cursos={cursos}
         onCancel={editando ? () => abrir(editando) : irALista}
         onSubmit={guardar}
       />
@@ -190,6 +199,11 @@ const Dashboard = () => {
     contenido = (
       <>
         <h1 className="hidden lg:block text-3xl font-semibold text-slate-900">Informes</h1>
+        {user.rol !== 'alumno' && (
+          <button onClick={() => setVista('estadisticas')} className="lg:hidden w-full bg-white border border-slate-200 rounded-sm py-2.5 font-semibold text-sm text-slate-600">
+            Ver estadísticas
+          </button>
+        )}
         <div className="relative mt-5 lg:mt-5">
           <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
@@ -199,6 +213,17 @@ const Dashboard = () => {
             onChange={(e) => setBusqueda(e.target.value)}
           />
         </div>
+        {user.rol !== 'alumno' && cursos.length > 0 && (
+          <select
+            className="mt-4 w-full sm:w-64 bg-white border border-slate-200 rounded-sm px-3 py-2.5 text-sm font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand"
+            value={cursoFiltro}
+            onChange={(e) => { setCursoFiltro(e.target.value); setPage(1); }}
+            aria-label="Filtrar por curso"
+          >
+            <option value="">Todos los cursos</option>
+            {cursos.map((c) => <option key={c._id} value={c.etiqueta}>{c.etiqueta}</option>)}
+          </select>
+        )}
         <div className="flex gap-2 mt-4 overflow-x-auto pb-1">
           {FILTROS.map(([valor, texto]) => (
             <button
@@ -217,7 +242,7 @@ const Dashboard = () => {
 
         {!cargando && reports.length === 0 ? (
           <p className="text-center font-normal text-slate-400 py-16">
-            {busquedaAplicada || estadoFiltro ? 'No hay informes que coincidan con la búsqueda.' : 'No hay informes para mostrar.'}
+            {busquedaAplicada || estadoFiltro || cursoFiltro ? 'No hay informes que coincidan con la búsqueda.' : 'No hay informes para mostrar.'}
           </p>
         ) : (
           <div className="mt-5 bg-white border border-slate-200 rounded overflow-hidden">
@@ -254,7 +279,7 @@ const Dashboard = () => {
   }
 
   return (
-    <AppShell user={user} counts={counts} canCreate={canCreate} vista={vista} onNuevo={nuevo} onInicio={irALista} onUsuarios={isAdmin ? () => setVista('usuarios') : undefined} onCuenta={() => setVista('cuenta')} onLogout={logout}>
+    <AppShell user={user} counts={counts} canCreate={canCreate} vista={vista} onNuevo={nuevo} onInicio={irALista} onUsuarios={isAdmin ? () => setVista('usuarios') : undefined} onCuenta={() => setVista('cuenta')} onEstadisticas={user.rol !== 'alumno' ? () => setVista('estadisticas') : undefined} onLogout={logout}>
       {contenido}
     </AppShell>
   );

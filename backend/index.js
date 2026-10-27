@@ -29,6 +29,7 @@ app.use(express.json());
 
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
+app.use('/api/cursos', require('./routes/cursoRoutes'));
 
 app.get('/', (req, res) => {
   res.send('API del Sistema de Informes Escolares corriendo...');

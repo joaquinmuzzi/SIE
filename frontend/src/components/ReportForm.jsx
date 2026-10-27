@@ -24,7 +24,7 @@ const desdeInforme = (r) => ({
   id_alumno: r.alumno?._id || '',
 });
 
-const ReportForm = ({ report, permisos, alumnos, onCancel, onSubmit }) => {
+const ReportForm = ({ report, permisos, alumnos, cursos: catalogo = [], onCancel, onSubmit }) => {
   const editando = !!report;
   const [form, setForm] = useState(editando ? desdeInforme(report) : vacio);
   const [busqueda, setBusqueda] = useState('');
@@ -32,7 +32,8 @@ const ReportForm = ({ report, permisos, alumnos, onCancel, onSubmit }) => {
   const [ocupado, setOcupado] = useState(false);
   const bloquearDatos = editando && !permisos.editarDatos;
 
-  const cursos = [...new Set(alumnos.map((a) => a.curso).filter(Boolean))].sort();
+  // Los cursos salen del catalogo oficial, no de lo que haya escrito cada alumno
+  const cursos = catalogo.map((c) => c.etiqueta);
   const alumnosFiltrados = alumnos.filter((a) => {
     if (!busqueda) return true;
     return (a.dni || '').includes(busqueda) || nombreCompleto(a).toLowerCase().includes(busqueda.toLowerCase());
