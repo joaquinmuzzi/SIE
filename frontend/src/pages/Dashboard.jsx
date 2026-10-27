@@ -1,14 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
-import { jsPDF } from 'jspdf';
+import { generarInformePdf } from '../utils/informePdf';
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import AppShell from '../components/AppShell';
 import ReportCard, { EncabezadoLista } from '../components/ReportCard';
 import ReportDetail from '../components/ReportDetail';
 import ReportForm from '../components/ReportForm';
 import UsuariosPanel from '../components/UsuariosPanel';
-import { ESTADOS, GRAVEDADES, TIPOS, destinatario, nombreCompleto } from '../components/ui';
 
 const PAGE_SIZE = 10;
 const FILTROS = [['', 'Todos'], ['abierto', 'Abiertos'], ['en_revision', 'En revisión'], ['cerrado', 'Cerrados']];
@@ -144,51 +143,7 @@ const Dashboard = () => {
   };
 
   const downloadPdf = (report) => {
-    const doc = new jsPDF();
-    const marginX = 15;
-    const pageWidth = doc.internal.pageSize.getWidth() - marginX * 2;
-    let y = 20;
-
-    const addLine = (text, size = 11, bold = false) => {
-      doc.setFontSize(size);
-      doc.setFont('helvetica', bold ? 'bold' : 'normal');
-      const lines = doc.splitTextToSize(text, pageWidth);
-      lines.forEach((line) => {
-        if (y > 280) {
-          doc.addPage();
-          y = 20;
-        }
-        doc.text(line, marginX, y);
-        y += size / 2 + 3;
-      });
-      y += 2;
-    };
-
-    addLine('Informe Escolar', 16, true);
-    addLine(report.titulo, 13, true);
-    addLine(`Tipo: ${TIPOS[report.tipo] || report.tipo}  |  Gravedad: ${GRAVEDADES[report.gravedad] || report.gravedad}  |  Estado: ${ESTADOS[report.estado] || report.estado}`);
-    addLine(`Fecha: ${new Date(report.fecha).toLocaleDateString()}`);
-    addLine(`Dirigido a: ${destinatario(report)}${report.alcance === 'individual' ? ` | Responsable: ${report.alumno?.responsable_nombre || 'Sin asignar'}` : ''}`);
-    addLine(`Creado por: ${nombreCompleto(report.creadoPor)} (${report.creadoPor?.rol || ''})`);
-
-    if (report.texto_profesor) {
-      addLine('Intervencion del Profesor:', 12, true);
-      addLine(report.texto_profesor);
-    }
-    if (report.texto_regente) {
-      addLine('Intervencion del Regente:', 12, true);
-      addLine(report.texto_regente);
-    }
-    if (report.texto_pat) {
-      addLine('Intervencion del PAT:', 12, true);
-      addLine(report.texto_pat);
-    }
-    if (report.descargo_alumno) {
-      addLine('Descargo del Alumno:', 12, true);
-      addLine(report.descargo_alumno);
-    }
-
-    doc.save(`informe-${report._id}.pdf`);
+    generarInformePdf(report).save(`informe-${String(report._id).padStart(5, '0')}.pdf`);
   };
 
   let contenido;
