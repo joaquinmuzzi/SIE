@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { KeyRound, MailCheck, MailWarning, UserPlus } from 'lucide-react';
+import { KeyRound, MailCheck, MailWarning, Trash2, UserPlus } from 'lucide-react';
 import api from '../api/axios';
 import { ROLES, nombreCompleto } from './ui';
 
@@ -65,6 +65,18 @@ const UsuariosPanel = ({ user }) => {
       cargar();
     } catch (err) {
       setAviso({ tipo: 'error', texto: err.response?.data?.message || 'No se pudo restablecer la contraseña' });
+    }
+  };
+
+  const eliminar = async (u) => {
+    if (!window.confirm(`¿Eliminar la cuenta de ${nombreCompleto(u)}? Esta acción no se puede deshacer.`)) return;
+    setAviso(null);
+    try {
+      const { data } = await api.delete(`/auth/users/${u._id}`);
+      setAviso({ tipo: 'ok', texto: data.message });
+      cargar();
+    } catch (err) {
+      setAviso({ tipo: 'error', texto: err.response?.data?.message || 'No se pudo eliminar la cuenta' });
     }
   };
 
@@ -165,7 +177,10 @@ const UsuariosPanel = ({ user }) => {
                 <td className="px-4 py-3 text-slate-600">{ROLES[u.rol] || u.rol}</td>
                 <td className="px-4 py-3 text-slate-600">{u.email}</td>
                 <td className="px-4 py-3">{u.debe_cambiar_clave ? <span className="text-amber-700 font-medium">Temporal, sin estrenar</span> : <span className="text-slate-500">Propia</span>}</td>
-                <td className="px-4 py-3 text-right">
+                <td className="px-4 py-3 text-right whitespace-nowrap">
+                  <button onClick={() => eliminar(u)} className="inline-flex items-center gap-1 text-slate-400 hover:text-red-700 font-medium mr-4" title="Eliminar la cuenta (solo si no tiene informes)">
+                    <Trash2 size={15} /> Eliminar
+                  </button>
                   <button onClick={() => restablecer(u)} className="inline-flex items-center gap-1 text-slate-500 hover:text-brand font-medium" title="Enviar una nueva contraseña temporal">
                     <KeyRound size={15} /> Restablecer
                   </button>

@@ -4,6 +4,7 @@ const {
   loginUser,
   createUser,
   resetPassword,
+  deleteUser,
   changePassword,
   getAlumnos,
   getUsers,
@@ -17,5 +18,6 @@ router.get('/alumnos', protect, authorize('gestor', 'directivo', 'profesor', 'pr
 router.get('/users', protect, authorize('gestor', 'directivo'), getUsers);
 router.post('/users', protect, authorize('gestor', 'directivo'), createUser);
 router.post('/users/:id/reset-password', protect, authorize('gestor', 'directivo'), resetPassword);
+router.delete('/users/:id', protect, authorize('gestor', 'directivo'), deleteUser);
 
 module.exports = router;

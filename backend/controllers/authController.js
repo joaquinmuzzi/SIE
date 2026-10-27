@@ -124,6 +124,42 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
+// Solo se puede eliminar una cuenta sin informes asociados: los informes quedan como antecedente
+exports.deleteUser = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ message: 'El id del usuario no es valido' });
+    }
+    if (id === req.user.id_usuario) {
+      return res.status(400).json({ message: 'No podes eliminar tu propia cuenta' });
+    }
+    const user = await User.findById(id);
+    if (!user || user.rol === 'padre' || user.rol === 'tutor') {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+    if (user.rol === 'gestor') {
+      if (req.user.rol !== 'gestor') {
+        return res.status(403).json({ message: 'Solo un gestor puede eliminar a otro gestor' });
+      }
+      const [[gestores]] = await pool.query("SELECT COUNT(*) AS n FROM usuarios WHERE rol = 'gestor'");
+      if (gestores.n <= 1) {
+        return res.status(400).json({ message: 'No se puede eliminar al unico gestor del sistema' });
+      }
+    }
+    const [[informes]] = await pool.query('SELECT COUNT(*) AS n FROM informes WHERE id_alumno = ? OR creado_por_id = ?', [id, id]);
+    if (informes.n > 0) {
+      return res.status(409).json({
+        message: `No se puede eliminar a ${user.nombre} ${user.apellido}: tiene ${informes.n} informe(s) asociado(s) y los informes se conservan como antecedente.`,
+      });
+    }
+    await pool.query('DELETE FROM usuarios WHERE id_usuario = ?', [id]);
+    res.json({ message: `Cuenta de ${user.nombre} ${user.apellido} eliminada` });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 exports.changePassword = async (req, res) => {
   const { actual, nueva } = req.body;
   try {
