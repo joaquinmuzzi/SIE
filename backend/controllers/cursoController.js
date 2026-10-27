@@ -11,7 +11,7 @@ exports.listarCursos = async (req, res) => {
          FROM cursos c
          LEFT JOIN usuarios u ON u.id_curso = c.id_curso AND u.rol = 'alumno'
         GROUP BY c.id_curso, c.anio, c.division, c.turno, c.especialidad
-        ORDER BY c.anio, c.division, c.turno`
+        ORDER BY c.anio, (c.division REGEXP '^[0-9]+$') DESC, CAST(c.division AS UNSIGNED), c.division, c.turno`
     );
     res.json(filas.map((f) => conEtiqueta({ ...f, alumnos: Number(f.alumnos) })));
   } catch (error) {
