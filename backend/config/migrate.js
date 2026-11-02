@@ -52,6 +52,14 @@ async function migrar() {
     "UPDATE informes SET tipo = NULL, gravedad = NULL WHERE alcance IN ('curso', 'todos') AND (tipo IS NOT NULL OR gravedad IS NOT NULL)"
   );
   if (avisos.affectedRows) console.log(`[migracion] ${avisos.affectedRows} aviso(s) sin tipo ni gravedad`);
+  // Un aviso tiene un solo texto (columna texto_profesor): se juntan los que hubiera escrito la regencia o el PAT
+  const [textos] = await pool.query(
+    `UPDATE informes
+        SET texto_profesor = NULLIF(CONCAT_WS('\n\n', NULLIF(texto_profesor, ''), NULLIF(texto_regente, ''), NULLIF(texto_pat, '')), ''),
+            texto_regente = NULL, texto_pat = NULL
+      WHERE alcance IN ('curso', 'todos') AND (texto_regente IS NOT NULL OR texto_pat IS NOT NULL)`
+  );
+  if (textos.affectedRows) console.log(`[migracion] ${textos.affectedRows} aviso(s) con un solo texto`);
 
   await asegurarColumna('informes', 'fecha_limite_descargo', 'DATETIME NULL');
   await asegurarColumna('informes', 'recordatorio_enviado', 'TINYINT(1) NOT NULL DEFAULT 0');

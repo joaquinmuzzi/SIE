@@ -44,6 +44,8 @@ const Dashboard = () => {
   // Profesores y preceptores solo editan los informes que crearon; regencia, PAT y gestores editan cualquiera abierto
   const canEditReport = (report) => {
     if (report.estado === 'cerrado') return false;
+    // Un aviso lo editan quien lo creó y el gestor o directivo
+    if (esAviso(report)) return isAdmin || report.creadoPor?._id === user._id;
     if (isAdmin || user.rol === 'regente' || esPat) return true;
     if (['profesor', 'preceptor'].includes(user.rol)) return report.creadoPor?._id === user._id;
     return false;

@@ -22,7 +22,7 @@ const ReportCard = ({ report, onOpen }) => {
           {!esAviso(report) && <ChipGravedad report={report} />}
           <ChipEstado report={report} />
           <span className="text-xs text-slate-500">
-            {!esAviso(report) && report.tipo && `${TIPOS[report.tipo] || report.tipo} · `}{n} {n === 1 ? 'intervención' : 'intervenciones'}
+            {esAviso(report) ? (report.alcance === 'curso' ? 'Aviso al curso' : 'Aviso a toda la comunidad') : `${report.tipo ? `${TIPOS[report.tipo] || report.tipo} · ` : ''}${n} ${n === 1 ? 'intervención' : 'intervenciones'}`}
           </span>
         </div>
         <div className="mt-2.5 max-w-[14rem]">

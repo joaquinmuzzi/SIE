@@ -119,7 +119,9 @@ export const BarraAvance = ({ report }) => (
 );
 
 export const intervenciones = (report) =>
-  [
+  esAviso(report)
+    ? [report.texto_profesor && { quien: 'Aviso', texto: report.texto_profesor, borde: 'border-l-brand' }].filter(Boolean)
+    : [
     report.texto_profesor && { quien: 'Profesor', texto: report.texto_profesor, borde: 'border-l-sky-600' },
     report.texto_regente && { quien: 'Regente', texto: report.texto_regente, borde: 'border-l-brand' },
     report.texto_pat && { quien: 'PAT', texto: report.texto_pat, borde: 'border-l-violet-600' },

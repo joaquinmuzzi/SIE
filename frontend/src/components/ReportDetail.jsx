@@ -78,9 +78,9 @@ const ReportDetail = ({ report, permisos, onBack, onEdit, onChangeState, onClose
         </div>
       )}
 
-      <h2 className="font-semibold text-slate-900 mt-6 mb-3">Intervenciones</h2>
+      <h2 className="font-semibold text-slate-900 mt-6 mb-3">{esAviso(report) ? 'Texto del aviso' : 'Intervenciones'}</h2>
       {voces.length === 0 ? (
-        <p className="text-sm font-normal text-slate-400">Todavía no hay intervenciones.</p>
+        <p className="text-sm font-normal text-slate-400">{esAviso(report) ? 'El aviso no tiene texto.' : 'Todavía no hay intervenciones.'}</p>
       ) : (
         <div className="space-y-3">
           {voces.map((v) => (

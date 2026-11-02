@@ -129,9 +129,10 @@ exports.createReport = async (req, res) => {
       // Los avisos (a un curso o a toda la comunidad) no tienen tipo de conducta ni gravedad
       tipo: alcanceFinal === 'individual' ? tipo || 'conducta' : null,
       gravedad: gravedadFinal,
-      texto_profesor,
-      texto_regente,
-      texto_pat,
+      // Un aviso tiene un solo texto, sin importar el rol de quien lo escribe
+      texto_profesor: alcanceFinal === 'individual' ? texto_profesor : texto_profesor || texto_regente || texto_pat,
+      texto_regente: alcanceFinal === 'individual' ? texto_regente : null,
+      texto_pat: alcanceFinal === 'individual' ? texto_pat : null,
       alcance: alcanceFinal,
       curso_destino: alcanceFinal === 'curso' ? curso_destino : null,
       id_alumno: alcanceFinal === 'individual' ? id_alumno : null,

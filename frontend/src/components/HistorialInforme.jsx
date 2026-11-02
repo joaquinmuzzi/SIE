@@ -12,7 +12,7 @@ const describir = (e, nombre) => {
   switch (e.accion) {
     case 'creado': return { icono: FilePlus, texto: `Creó el ${nombre}` };
     case 'estado': return { icono: RefreshCw, texto: `Cambió el estado de «${ESTADOS[e.estado_anterior] || e.estado_anterior}» a «${ESTADOS[e.estado_nuevo] || e.estado_nuevo}»` };
-    case 'editado': return { icono: Edit3, texto: `Editó ${(e.detalle || '').split(', ').map((c) => CAMPOS[c] || c).join(', ')}` };
+    case 'editado': return { icono: Edit3, texto: `Editó ${(e.detalle || '').split(', ').map((c) => (nombre === 'aviso' && c === 'texto_profesor' ? 'el texto del aviso' : CAMPOS[c] || c)).join(', ')}` };
     case 'descargo': return { icono: MessageSquare, texto: 'Presentó su descargo' };
     case 'recordatorio': return { icono: Bell, texto: 'Se envió el recordatorio de descargo al alumno' };
     case 'plazo_vencido': return { icono: Clock, texto: `Venció el plazo de descargo: el informe pasó a «${ESTADOS[e.estado_nuevo] || e.estado_nuevo}»` };

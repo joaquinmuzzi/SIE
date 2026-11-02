@@ -83,7 +83,11 @@ const ReportForm = ({ report, modo = 'informe', permisos, alumnos, cursos: catal
     // La gravedad solo la envían el gestor y la regencia, y solo en los informes
     const datos = { ...form };
     if (esAviso || !permisos.gravedad) delete datos.gravedad;
-    if (esAviso) delete datos.tipo;
+    if (esAviso) {
+      delete datos.tipo;
+      delete datos.texto_regente;
+      delete datos.texto_pat;
+    }
     try {
       await onSubmit(datos);
     } catch (err) {
@@ -242,25 +246,32 @@ const ReportForm = ({ report, modo = 'informe', permisos, alumnos, cursos: catal
           </p>
         )}
 
-        {permisos.textoProfesor && (
+        {/* Un aviso tiene un solo texto, escriba quien escriba */}
+        {esAviso && (
           <div>
-            <label className={ETIQUETA}>{esAviso ? 'Texto del aviso' : 'Texto del profesor'}</label>
-            <textarea className={`${ENTRADA} h-28`} value={form.texto_profesor} onChange={set('texto_profesor')} />
-            {!esAviso && <Frases campo="texto_profesor" valor={form.texto_profesor} onAgregar={(t) => setForm({ ...form, texto_profesor: t })} />}
+            <label className={ETIQUETA}>Texto del aviso</label>
+            <textarea className={`${ENTRADA} h-36`} value={form.texto_profesor} onChange={set('texto_profesor')} required />
           </div>
         )}
-        {permisos.textoRegente && (
+        {!esAviso && permisos.textoProfesor && (
+          <div>
+            <label className={ETIQUETA}>Texto del profesor</label>
+            <textarea className={`${ENTRADA} h-28`} value={form.texto_profesor} onChange={set('texto_profesor')} />
+            <Frases campo="texto_profesor" valor={form.texto_profesor} onAgregar={(t) => setForm({ ...form, texto_profesor: t })} />
+          </div>
+        )}
+        {!esAviso && permisos.textoRegente && (
           <div>
             <label className={ETIQUETA}>Texto del regente</label>
             <textarea className={`${ENTRADA} h-28`} value={form.texto_regente} onChange={set('texto_regente')} />
-            {!esAviso && <Frases campo="texto_regente" valor={form.texto_regente} onAgregar={(t) => setForm({ ...form, texto_regente: t })} />}
+            <Frases campo="texto_regente" valor={form.texto_regente} onAgregar={(t) => setForm({ ...form, texto_regente: t })} />
           </div>
         )}
-        {permisos.textoPat && (
+        {!esAviso && permisos.textoPat && (
           <div>
             <label className={ETIQUETA}>Texto del PAT</label>
             <textarea className={`${ENTRADA} h-28`} value={form.texto_pat} onChange={set('texto_pat')} />
-            {!esAviso && <Frases campo="texto_pat" valor={form.texto_pat} onAgregar={(t) => setForm({ ...form, texto_pat: t })} />}
+            <Frases campo="texto_pat" valor={form.texto_pat} onAgregar={(t) => setForm({ ...form, texto_pat: t })} />
           </div>
         )}
 

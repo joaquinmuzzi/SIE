@@ -40,6 +40,20 @@ describe('gravedad', () => {
   test('[invalido] leerGravedad rechaza valores desconocidos', () => assert.equal(leerGravedad('gravisima'), undefined));
 });
 
+describe('avisos', () => {
+  const aviso = (extra = {}) => informe({ alcance: 'curso', creadoPor: { _id: 10 }, ...extra });
+  test('[correcto] el regente que creo el aviso edita su unico texto', () => {
+    assert.deepEqual([...camposEditables(usuario('regente'), aviso())], ['texto_profesor']);
+  });
+  test('[correcto] el gestor edita titulo, estado y texto de cualquier aviso', () => {
+    assert.deepEqual([...camposEditables(usuario('gestor', { id_usuario: 1 }), aviso())].sort(), ['estado', 'texto_profesor', 'titulo']);
+  });
+  test('[invalido] en un aviso ajeno no se edita nada, aunque cumpla la funcion PAT', () => {
+    assert.equal(camposEditables(usuario('profesor', { id_usuario: 99, es_pat: 1 }), aviso()).size, 0);
+    assert.equal(camposEditables(usuario('regente', { id_usuario: 99 }), aviso()).size, 0);
+  });
+});
+
 describe('funcion de PAT', () => {
   test('[correcto] un profesor marcado como PAT redacta el texto del PAT en cualquier informe', () => {
     const campos = camposEditables(usuario('profesor', { es_pat: 1, id_usuario: 99 }), informe());

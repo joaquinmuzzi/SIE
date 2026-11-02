@@ -123,7 +123,10 @@ export function generarInformePdf(report) {
   const lineasDe = (texto) => doc.setFont('helvetica', 'normal').setFontSize(10.5) && doc.splitTextToSize(texto, ancho - 10);
   const paso = 5.4;
   doc.setLineHeightFactor((paso * 72) / 25.4 / 10.5); // el interlineado real coincide con el alto que se reserva
-  const secciones = VOCES.filter(([campo]) => report[campo]);
+  // Un aviso tiene un solo texto
+  const secciones = report.alcance === 'individual'
+    ? VOCES.filter(([campo]) => report[campo])
+    : report.texto_profesor ? [['texto_profesor', 'Texto del aviso', MARRON]] : [];
   if (!secciones.length) {
     color(GRIS);
     doc.setFont('helvetica', 'italic').setFontSize(10).text('Este informe todavía no tiene intervenciones.', M, y);

@@ -14,6 +14,13 @@ const esAviso = (alcance) => alcance === 'curso' || alcance === 'todos';
 /** Campos de un informe abierto que el usuario puede modificar. */
 function camposEditables(user, report) {
   const campos = new Set();
+  // Un aviso tiene un solo texto (texto_profesor): lo editan quien lo creo y el gestor o directivo
+  if (esAviso(report.alcance)) {
+    const admin = ['gestor', 'directivo'].includes(user.rol);
+    if (admin) ['titulo', 'estado'].forEach((c) => campos.add(c));
+    if (admin || (report.creadoPor && report.creadoPor._id === user.id_usuario)) campos.add('texto_profesor');
+    return campos;
+  }
   if (['gestor', 'directivo'].includes(user.rol)) {
     ['titulo', 'estado', 'id_alumno', 'texto_profesor', 'texto_regente', 'texto_pat'].forEach((c) => campos.add(c));
     // Los avisos no tienen tipo de conducta
