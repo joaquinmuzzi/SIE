@@ -81,7 +81,10 @@ export function generarInformePdf(report) {
     return x + w + 3;
   };
   let x = M;
-  x = etiqueta(`Gravedad: ${GRAVEDADES[report.gravedad] || report.gravedad}`, ESTILO_GRAVEDAD[report.gravedad] || ESTILO_GRAVEDAD.leve, x);
+  // Los avisos no llevan gravedad; un informe todavia sin calificar lo indica
+  if (report.alcance === 'individual') {
+    x = etiqueta(`Gravedad: ${GRAVEDADES[report.gravedad] || 'sin asignar'}`, ESTILO_GRAVEDAD[report.gravedad] || [GRIS, LINEA], x);
+  }
   x = etiqueta(`Estado: ${ESTADOS[report.estado] || report.estado}`, ESTILO_ESTADO[report.estado] || ESTILO_ESTADO.abierto, x);
   etiqueta(TIPOS[report.tipo] || report.tipo, [GRIS, LINEA], x);
   y += 13;
@@ -91,7 +94,7 @@ export function generarInformePdf(report) {
   const destinatario = individual ? nombre(report.alumno) || 'Sin asignar' : report.alcance === 'curso' ? `Curso ${report.curso_destino}` : 'Toda la comunidad';
   const datos = [
     ['Dirigido a', destinatario],
-    [individual ? 'Curso' : 'Alcance', individual ? report.alumno?.curso || '—' : report.alcance === 'curso' ? 'Informe de curso' : 'Informe general'],
+    [individual ? 'Curso' : 'Alcance', individual ? report.alumno?.curso || '—' : report.alcance === 'curso' ? 'Aviso al curso' : 'Aviso a toda la comunidad'],
     individual && ['Responsable', report.alumno?.responsable_nombre || 'Sin cargar'],
     ['Fecha de emisión', fecha(report.fecha)],
     ['Creado por', `${nombre(report.creadoPor)}${report.creadoPor?.rol ? ` (${ROLES[report.creadoPor.rol] || report.creadoPor.rol})` : ''}`],

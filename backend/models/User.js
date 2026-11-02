@@ -29,7 +29,7 @@ const User = {
     const salt = await bcrypt.genSalt(10);
     const hash = await bcrypt.hash(data.password, salt);
     const [result] = await pool.query(
-      'INSERT INTO usuarios (nombre, apellido, email, password, rol, dni, telefono, cargo, curso, id_padre, tiene_acceso, debe_cambiar_clave, responsable_nombre, responsable_email, responsable_telefono, id_curso) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO usuarios (nombre, apellido, email, password, rol, dni, telefono, cargo, curso, id_padre, tiene_acceso, debe_cambiar_clave, responsable_nombre, responsable_email, responsable_telefono, id_curso, es_pat) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         data.nombre,
         data.apellido || '',
@@ -47,6 +47,7 @@ const User = {
         data.responsable_email || null,
         data.responsable_telefono || null,
         data.id_curso || null,
+        data.es_pat ? 1 : 0,
       ]
     );
     return {
@@ -65,6 +66,7 @@ const User = {
       responsable_nombre: data.responsable_nombre || null,
       responsable_email: data.responsable_email || null,
       responsable_telefono: data.responsable_telefono || null,
+      es_pat: data.es_pat ? 1 : 0,
     };
   },
 

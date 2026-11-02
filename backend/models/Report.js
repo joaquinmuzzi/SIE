@@ -57,6 +57,12 @@ function buildWhere(filters) {
     andParams.push(...orParams);
   }
 
+  if (filters && filters.grupo === 'informes') {
+    andConditions.push("i.alcance = 'individual'");
+  } else if (filters && filters.grupo === 'avisos') {
+    andConditions.push("i.alcance IN ('curso', 'todos')");
+  }
+
   if (filters && filters.estado) {
     andConditions.push('i.estado = ?');
     andParams.push(filters.estado);
@@ -169,7 +175,7 @@ const Report = {
       [
         data.titulo,
         data.tipo || 'conducta',
-        data.gravedad || 'leve',
+        data.gravedad || null,
         data.estado || 'abierto',
         data.alcance || 'individual',
         data.curso_destino || null,

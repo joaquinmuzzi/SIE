@@ -1,4 +1,4 @@
-import { BarChart3, Inbox, LogOut, Plus, Settings, Users } from 'lucide-react';
+import { BarChart3, Inbox, LogOut, Megaphone, Plus, Settings, UserCircle, Users } from 'lucide-react';
 import { ROLES, iniciales, nombreCompleto } from './ui';
 
 const Contador = ({ n, texto, punto }) => (
@@ -12,10 +12,12 @@ const Contador = ({ n, texto, punto }) => (
 );
 
 // Estructura comun del panel: lateral fijo de alto completo en compu, encabezado y barra inferior en celular
-const AppShell = ({ user, counts, canCreate, vista, onNuevo, onInicio, onUsuarios, onCuenta, onEstadisticas, onLogout, children }) => {
+const AppShell = ({ user, counts, canCreate, vista, ancho, onNuevo, onNuevoAviso, onInicio, onUsuarios, onPerfil, onCuenta, onEstadisticas, onLogout, children }) => {
   const enUsuarios = vista === 'usuarios';
   const enEstadisticas = vista === 'estadisticas';
+  const enPerfil = vista === 'perfil';
   const enCuenta = vista === 'cuenta';
+  const enInicio = !enUsuarios && !enEstadisticas && !enPerfil && !enCuenta;
   const rol = ROLES[user.rol] || user.rol;
   const detalle = user.cargo || user.curso;
 
@@ -55,10 +57,18 @@ const AppShell = ({ user, counts, canCreate, vista, onNuevo, onInicio, onUsuario
             <Plus size={18} /> Nuevo informe
           </button>
         )}
+        {canCreate && (
+          <button
+            onClick={onNuevoAviso}
+            className="w-full mt-2 border border-white/15 hover:bg-white/5 text-white font-semibold rounded-sm py-2.5 flex items-center justify-center gap-2"
+          >
+            <Megaphone size={18} /> Nuevo aviso
+          </button>
+        )}
 
         <nav className="mt-6 space-y-1 font-medium">
-          <button onClick={onInicio} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-sm ${enUsuarios || enCuenta || enEstadisticas ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'bg-white/10 text-white border-l-2 border-brand'}`}>
-            <Inbox size={18} /> Informes
+          <button onClick={onInicio} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-sm ${enInicio ? 'bg-white/10 text-white border-l-2 border-brand' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
+            <Inbox size={18} /> Informes y avisos
           </button>
           {onEstadisticas && (
             <button onClick={onEstadisticas} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-sm ${enEstadisticas ? 'bg-white/10 text-white border-l-2 border-brand' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
@@ -74,21 +84,29 @@ const AppShell = ({ user, counts, canCreate, vista, onNuevo, onInicio, onUsuario
 
         <div className="mt-auto flex items-center gap-1">
           <button
+            onClick={onPerfil}
+            title="Mi perfil"
+            aria-label="Mi perfil"
+            className={`w-10 h-10 shrink-0 grid place-items-center rounded-sm hover:text-white hover:bg-white/5 ${enPerfil ? 'bg-white/10 text-white' : 'text-slate-400'}`}
+          >
+            <UserCircle size={20} />
+          </button>
+          <button
             onClick={onCuenta}
             title="Configuración de la cuenta"
             aria-label="Configuración de la cuenta"
-            className={`w-11 h-11 shrink-0 grid place-items-center rounded-sm hover:text-white hover:bg-white/5 ${enCuenta ? 'bg-white/10 text-white' : 'text-slate-400'}`}
+            className={`w-10 h-10 shrink-0 grid place-items-center rounded-sm hover:text-white hover:bg-white/5 ${enCuenta ? 'bg-white/10 text-white' : 'text-slate-400'}`}
           >
             <Settings size={20} />
           </button>
-          <button onClick={onLogout} className="flex-1 flex items-center gap-3 px-3 py-2.5 rounded-sm text-slate-400 hover:text-white hover:bg-white/5 font-medium">
+          <button onClick={onLogout} className="flex-1 flex items-center gap-2 px-2 py-2.5 rounded-sm text-slate-400 hover:text-white hover:bg-white/5 font-medium whitespace-nowrap">
             <LogOut size={18} /> Cerrar sesión
           </button>
         </div>
       </aside>
 
       <div className="lg:pl-72">
-        <main className="max-w-5xl mx-auto px-5 pt-6 pb-28 lg:px-10 lg:py-10">
+        <main className={`${ancho ? 'max-w-7xl' : 'max-w-5xl'} mx-auto px-5 pt-6 pb-28 lg:px-10 lg:py-10`}>
           <div className="flex items-center gap-3 lg:hidden mb-5">
             <div className="w-11 h-11 shrink-0 rounded-sm bg-brand text-white grid place-items-center font-semibold">{iniciales(user)}</div>
             <div className="flex-1 min-w-0">
@@ -103,9 +121,9 @@ const AppShell = ({ user, counts, canCreate, vista, onNuevo, onInicio, onUsuario
         </main>
       </div>
 
-      <nav className="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 h-20 px-6 grid items-center" style={{ gridTemplateColumns: `repeat(${onUsuarios ? 5 : 4}, minmax(0, 1fr))` }}>
-        <button onClick={onInicio} className={`flex flex-col items-center gap-0.5 text-[11px] font-medium ${enUsuarios || enCuenta || enEstadisticas ? 'text-slate-500' : 'text-brand'}`}>
-          <Inbox size={18} /> Informes
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 h-20 px-3 grid items-center" style={{ gridTemplateColumns: `repeat(${onUsuarios ? 6 : 5}, minmax(0, 1fr))` }}>
+        <button onClick={onInicio} className={`flex flex-col items-center gap-0.5 text-[11px] font-medium ${enInicio ? 'text-brand' : 'text-slate-500'}`}>
+          <Inbox size={18} /> Inicio
         </button>
         {onUsuarios && (
           <button onClick={onUsuarios} className={`flex flex-col items-center gap-0.5 text-[11px] font-medium ${enUsuarios ? 'text-brand' : 'text-slate-500'}`}>
@@ -125,6 +143,9 @@ const AppShell = ({ user, counts, canCreate, vista, onNuevo, onInicio, onUsuario
         )}
         <button onClick={onLogout} className="flex flex-col items-center gap-0.5 text-[11px] font-medium text-slate-500">
           <LogOut size={18} /> Salir
+        </button>
+        <button onClick={onPerfil} className={`flex flex-col items-center gap-0.5 text-[11px] font-medium ${enPerfil ? 'text-brand' : 'text-slate-500'}`}>
+          <UserCircle size={18} /> Perfil
         </button>
         <button onClick={onCuenta} className={`flex flex-col items-center gap-0.5 text-[11px] font-medium ${enCuenta ? 'text-brand' : 'text-slate-500'}`}>
           <Settings size={18} /> Cuenta

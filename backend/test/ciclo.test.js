@@ -2,10 +2,11 @@
 // Sin base de datos ni mails reales: repositorio y mailer son dobles.
 const { test, describe } = require('node:test');
 const assert = require('node:assert/strict');
-const { sumarDiasHabiles, evaluarInforme, crearCiclo } = require('../services/ciclo');
+const { sumarDiasHabiles, evaluarInforme, crearCiclo, config } = require('../services/ciclo');
 const { generarClaveTemporal } = require('../services/claves');
 
-const CFG = { descargoDiasHabiles: 5, cierreDias: 15 };
+// Plazos vigentes: 3 dias habiles para el descargo y cierre a los 5 dias habiles
+const CFG = { descargoDiasHabiles: 3, cierreDiasHabiles: 5 };
 const d = (s) => new Date(s);
 
 describe('sumarDiasHabiles', () => {
@@ -25,18 +26,30 @@ describe('sumarDiasHabiles', () => {
 
 const informe = (extra = {}) => ({
   estado: 'abierto', alcance: 'individual', descargo_alumno: null, descargo_vencido: 0, recordatorio_enviado: 0,
-  created_at: '2026-10-26T10:00:00', fecha_limite_descargo: '2026-11-02T10:00:00', ...extra,
+  created_at: '2026-10-26T10:00:00', fecha_limite_descargo: '2026-10-29T10:00:00', ...extra,
+});
+
+describe('plazos por defecto', () => {
+  test('[correcto] sin variables de entorno: 3 dias habiles de descargo y cierre a los 5', () => {
+    const antes = { ...process.env };
+    delete process.env.DESCARGO_DIAS_HABILES;
+    delete process.env.CIERRE_DIAS_HABILES;
+    assert.deepEqual(config(), { descargoDiasHabiles: 3, cierreDiasHabiles: 5 });
+    Object.assign(process.env, antes);
+  });
 });
 
 describe('evaluarInforme', () => {
   test('[correcto] recien creado: no hace nada', () => assert.equal(evaluarInforme(informe(), d('2026-10-26T12:00:00'), CFG), null));
-  test('[correcto] pasada la mitad del plazo: recordar', () => assert.equal(evaluarInforme(informe(), d('2026-10-30T10:00:00'), CFG), 'recordar'));
-  test('[correcto] el recordatorio no se repite', () => assert.equal(evaluarInforme(informe({ recordatorio_enviado: 1 }), d('2026-10-31T10:00:00'), CFG), null));
-  test('[correcto] vencido el plazo sin descargo: vencer', () => assert.equal(evaluarInforme(informe(), d('2026-11-02T10:00:01'), CFG), 'vencer'));
-  test('[correcto] a los 15 dias se cierra solo', () => assert.equal(evaluarInforme(informe({ descargo_vencido: 1, estado: 'en_revision' }), d('2026-11-10T10:00:00'), CFG), 'cerrar'));
+  test('[correcto] pasada la mitad del plazo: recordar', () => assert.equal(evaluarInforme(informe(), d('2026-10-28T10:00:00'), CFG), 'recordar'));
+  test('[correcto] el recordatorio no se repite', () => assert.equal(evaluarInforme(informe({ recordatorio_enviado: 1 }), d('2026-10-28T12:00:00'), CFG), null));
+  test('[correcto] vencido el plazo sin descargo: vencer', () => assert.equal(evaluarInforme(informe(), d('2026-10-29T10:00:01'), CFG), 'vencer'));
+  test('[correcto] a los 5 dias habiles se cierra solo (lunes -> lunes siguiente)', () => assert.equal(evaluarInforme(informe({ descargo_vencido: 1, estado: 'en_revision' }), d('2026-11-02T10:00:00'), CFG), 'cerrar'));
+  test('[limite] el fin de semana no cuenta: el viernes todavia no se cierra', () => assert.equal(evaluarInforme(informe({ descargo_vencido: 1, estado: 'en_revision' }), d('2026-10-30T18:00:00'), CFG), null));
+  test('[correcto] el cierre automatico rige aunque el alumno haya presentado su descargo', () => assert.equal(evaluarInforme(informe({ descargo_alumno: 'mi version' }), d('2026-11-02T10:00:00'), CFG), 'cerrar'));
   test('[invalido] con descargo presentado no se recuerda ni se vence', () => {
-    assert.equal(evaluarInforme(informe({ descargo_alumno: 'mi version' }), d('2026-10-31T10:00:00'), CFG), null);
-    assert.equal(evaluarInforme(informe({ descargo_alumno: 'mi version' }), d('2026-11-05T10:00:00'), CFG), null);
+    assert.equal(evaluarInforme(informe({ descargo_alumno: 'mi version' }), d('2026-10-28T10:00:00'), CFG), null);
+    assert.equal(evaluarInforme(informe({ descargo_alumno: 'mi version' }), d('2026-10-30T10:00:00'), CFG), null);
   });
   test('[invalido] un informe cerrado no se toca nunca', () => assert.equal(evaluarInforme(informe({ estado: 'cerrado' }), d('2027-01-01T00:00:00'), CFG), null));
   test('[invalido] los informes generales (curso/todos) no tienen plazo', () => {
@@ -47,13 +60,13 @@ describe('evaluarInforme', () => {
     assert.equal(evaluarInforme(viejo, d('2026-11-05T10:00:00'), CFG), null);
     assert.equal(evaluarInforme(viejo, d('2027-03-01T10:00:00'), CFG), null);
   });
-  test('[limite] justo en el instante del vencimiento ya vence', () => assert.equal(evaluarInforme(informe(), d('2026-11-02T10:00:00'), CFG), 'vencer'));
+  test('[limite] justo en el instante del vencimiento ya vence', () => assert.equal(evaluarInforme(informe(), d('2026-10-29T10:00:00'), CFG), 'vencer'));
 });
 
 describe('ciclo: aplica las acciones y avisa por mail', () => {
   const fila = (extra = {}) => ({
     id_informe: 7, titulo: 'Uso del celular', gravedad: 'leve', estado: 'abierto', alcance: 'individual', descargo_alumno: null,
-    fecha_limite_descargo: '2026-11-02T10:00:00', recordatorio_enviado: 0, descargo_vencido: 0, created_at: '2026-10-26T10:00:00',
+    fecha_limite_descargo: '2026-10-29T10:00:00', recordatorio_enviado: 0, descargo_vencido: 0, created_at: '2026-10-26T10:00:00',
     alumno_nombre: 'Lucas', alumno_apellido: 'Gomez', alumno_email: 'lucas@x.com', responsable_nombre: 'Marta', responsable_email: 'marta@x.com', ...extra,
   });
   const montar = (filas, ahora) => {
@@ -70,20 +83,20 @@ describe('ciclo: aplica las acciones y avisa por mail', () => {
   };
 
   test('[correcto] recordatorio: marca y manda un mail al alumno', async () => {
-    const { ciclo, llamadas, mails } = montar([fila()], '2026-10-30T10:00:00');
+    const { ciclo, llamadas, mails } = montar([fila()], '2026-10-28T10:00:00');
     assert.deepEqual(await ciclo.ejecutar(), { recordados: 1, vencidos: 0, cerrados: 0 });
     assert.deepEqual(llamadas, [['recordatorio', 7]]);
     assert.equal(mails.length, 1);
     assert.equal(mails[0].para, 'lucas@x.com');
   });
   test('[correcto] vencimiento: marca vencido y avisa al alumno', async () => {
-    const { ciclo, llamadas, mails } = montar([fila()], '2026-11-03T10:00:00');
+    const { ciclo, llamadas, mails } = montar([fila()], '2026-10-30T10:00:00');
     assert.deepEqual(await ciclo.ejecutar(), { recordados: 0, vencidos: 1, cerrados: 0 });
     assert.deepEqual(llamadas, [['vencido', 7]]);
     assert.match(mails[0].asunto, /venci/i);
   });
   test('[correcto] cierre automatico: cierra y avisa al responsable', async () => {
-    const { ciclo, llamadas, mails } = montar([fila({ estado: 'en_revision', descargo_vencido: 1 })], '2026-11-12T10:00:00');
+    const { ciclo, llamadas, mails } = montar([fila({ estado: 'en_revision', descargo_vencido: 1 })], '2026-11-03T10:00:00');
     assert.deepEqual(await ciclo.ejecutar(), { recordados: 0, vencidos: 0, cerrados: 1 });
     assert.deepEqual(llamadas, [['cerrar', 7]]);
     assert.equal(mails[0].para, 'marta@x.com');
@@ -94,7 +107,7 @@ describe('ciclo: aplica las acciones y avisa por mail', () => {
     assert.equal(llamadas.length + mails.length, 0);
   });
   test('[limite] el mail de aviso no incluye el contenido del informe, solo el resumen', async () => {
-    const { ciclo, mails } = montar([fila()], '2026-10-30T10:00:00');
+    const { ciclo, mails } = montar([fila()], '2026-10-28T10:00:00');
     await ciclo.ejecutar();
     assert.doesNotMatch(mails[0].texto, /texto_profesor|descargo_alumno/);
   });

@@ -6,6 +6,7 @@ const mailer = require('../services/mailer');
 const mensajes = require('../services/mensajes');
 const { crearLimitador } = require('../services/limiteIntentos');
 const { etiquetaCurso } = require('../services/cursos');
+const { ROLES_CON_FUNCION_PAT } = require('../services/permisos');
 
 // 5 contrasenas actuales equivocadas en 15 minutos bloquean el cambio de clave de ese usuario
 const limiteCambioClave = crearLimitador({ max: 5, ventanaMs: 15 * 60 * 1000 });
@@ -34,8 +35,10 @@ const datosPublicos = (user) => ({
   responsable_nombre: user.responsable_nombre,
   responsable_email: user.responsable_email,
   responsable_telefono: user.responsable_telefono,
+  es_pat: Boolean(user.es_pat),
   debe_cambiar_clave: Boolean(user.debe_cambiar_clave),
 });
+const TELEFONO_VALIDO = /^[\d\s+()-]{6,30}$/;
 
 exports.loginUser = async (req, res) => {
   const { email, password } = req.body;
@@ -57,7 +60,7 @@ exports.loginUser = async (req, res) => {
 
 // Alta de cuenta por el gestor/directivo: la clave temporal se genera aca y le llega al mail del usuario
 exports.createUser = async (req, res) => {
-  const { nombre, apellido, email, rol, dni, telefono, cargo, id_curso, responsable_nombre, responsable_email, responsable_telefono } = req.body;
+  const { nombre, apellido, email, rol, dni, telefono, cargo, id_curso, responsable_nombre, responsable_email, responsable_telefono, es_pat } = req.body;
 
   try {
     if (!nombre || !apellido || !email) {
@@ -104,6 +107,7 @@ exports.createUser = async (req, res) => {
       curso: cursoElegido ? etiquetaCurso(cursoElegido) : null,
       id_curso: cursoElegido ? cursoElegido.id_curso : null,
       debe_cambiar_clave: true,
+      es_pat: ROLES_CON_FUNCION_PAT.includes(rol) && Boolean(es_pat),
       responsable_nombre: rol === 'alumno' ? responsable_nombre : null,
       responsable_email: rol === 'alumno' ? responsable_email : null,
       responsable_telefono: rol === 'alumno' ? responsable_telefono : null,
@@ -220,10 +224,47 @@ exports.getUsers = async (req, res) => {
   try {
     const [rows] = await pool.query(
       `SELECT id_usuario AS _id, nombre, apellido, email, rol, dni, telefono, cargo, curso,
-              responsable_nombre, responsable_email, responsable_telefono, debe_cambiar_clave
+              responsable_nombre, responsable_email, responsable_telefono, debe_cambiar_clave, es_pat
          FROM usuarios WHERE rol NOT IN ('padre', 'tutor') ORDER BY apellido, nombre`
     );
     res.json(rows);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Asigna o quita la funcion de PAT a un profesor o preceptor (no es un rol aparte)
+exports.setFuncionPat = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user || user.rol === 'padre' || user.rol === 'tutor') {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+    if (!ROLES_CON_FUNCION_PAT.includes(user.rol)) {
+      return res.status(400).json({ message: 'La funcion de PAT se asigna solo a profesores y preceptores' });
+    }
+    const esPat = Boolean(req.body.es_pat);
+    await pool.query('UPDATE usuarios SET es_pat = ? WHERE id_usuario = ?', [esPat ? 1 : 0, user.id_usuario]);
+    res.json(datosPublicos({ ...user, es_pat: esPat }));
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Mi perfil: datos actualizados del usuario logueado
+exports.getPerfil = async (req, res) => {
+  res.json(datosPublicos(req.user));
+};
+
+// Mi perfil: cada usuario actualiza su telefono; el resto de los datos los corrige el gestor o directivo
+exports.updatePerfil = async (req, res) => {
+  try {
+    const telefono = String(req.body.telefono ?? '').trim();
+    if (telefono && !TELEFONO_VALIDO.test(telefono)) {
+      return res.status(400).json({ message: 'El telefono solo puede tener numeros, espacios, +, - y parentesis (6 a 30 caracteres)' });
+    }
+    await pool.query('UPDATE usuarios SET telefono = ? WHERE id_usuario = ?', [telefono || null, req.user.id_usuario]);
+    res.json(datosPublicos(await User.findById(req.user.id_usuario)));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

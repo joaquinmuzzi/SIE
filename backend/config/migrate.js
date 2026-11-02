@@ -26,6 +26,19 @@ async function migrar() {
   await asegurarColumna('usuarios', 'responsable_email', 'VARCHAR(150) NULL');
   await asegurarColumna('usuarios', 'responsable_telefono', 'VARCHAR(30) NULL');
 
+  // Funcion de PAT asignable a un profesor o preceptor (sin crear otro rol)
+  await asegurarColumna('usuarios', 'es_pat', 'TINYINT(1) NOT NULL DEFAULT 0');
+
+  // La gravedad la asignan solo el gestor o la regencia: un informe nuevo puede quedar "sin asignar"
+  const [[grav]] = await pool.query(
+    `SELECT IS_NULLABLE AS nulo FROM information_schema.columns
+      WHERE table_schema = DATABASE() AND table_name = 'informes' AND column_name = 'gravedad'`
+  );
+  if (grav && grav.nulo === 'NO') {
+    await pool.query('ALTER TABLE informes MODIFY gravedad VARCHAR(20) NULL DEFAULT NULL');
+    console.log('[migracion] informes.gravedad admite "sin asignar"');
+  }
+
   await asegurarColumna('informes', 'fecha_limite_descargo', 'DATETIME NULL');
   await asegurarColumna('informes', 'recordatorio_enviado', 'TINYINT(1) NOT NULL DEFAULT 0');
   await asegurarColumna('informes', 'descargo_vencido', 'TINYINT(1) NOT NULL DEFAULT 0');

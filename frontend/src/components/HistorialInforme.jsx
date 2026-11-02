@@ -16,7 +16,7 @@ const describir = (e) => {
     case 'descargo': return { icono: MessageSquare, texto: 'Presentó su descargo' };
     case 'recordatorio': return { icono: Bell, texto: 'Se envió el recordatorio de descargo al alumno' };
     case 'plazo_vencido': return { icono: Clock, texto: `Venció el plazo de descargo: el informe pasó a «${ESTADOS[e.estado_nuevo] || e.estado_nuevo}»` };
-    case 'cierre_automatico': return { icono: CheckCircle, texto: 'El informe se cerró automáticamente a los 15 días' };
+    case 'cierre_automatico': return { icono: CheckCircle, texto: 'El informe se cerró automáticamente al vencer el plazo' };
     default: return { icono: Edit3, texto: e.accion };
   }
 };

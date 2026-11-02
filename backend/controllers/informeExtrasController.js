@@ -52,7 +52,8 @@ exports.getEstadisticas = async (req, res) => {
 
     const [porEstado, porGravedad, porTipo, porCurso, porMes, top, [descargos]] = await Promise.all([
       q(`SELECT i.estado AS clave, COUNT(*) AS total ${desde} GROUP BY i.estado`),
-      q(`SELECT i.gravedad AS clave, COUNT(*) AS total ${desde} GROUP BY i.gravedad`),
+      // Los avisos no llevan gravedad: se cuentan solo los informes a un alumno
+      q(`SELECT COALESCE(i.gravedad, 'sin_asignar') AS clave, COUNT(*) AS total ${base} ${y("i.alcance = 'individual'")} GROUP BY COALESCE(i.gravedad, 'sin_asignar')`),
       q(`SELECT i.tipo AS clave, COUNT(*) AS total ${desde} GROUP BY i.tipo`),
       q(`SELECT COALESCE(al.curso, i.curso_destino) AS clave, COUNT(*) AS total ${base} ${y("i.alcance <> 'todos'")}
           GROUP BY COALESCE(al.curso, i.curso_destino) ORDER BY total DESC, clave LIMIT 10`),
@@ -79,7 +80,7 @@ exports.getEstadisticas = async (req, res) => {
       curso: curso || null,
       total: Object.values(agrupar(porEstado, 'clave')).reduce((a, b) => a + b, 0),
       porEstado: { abierto: 0, en_revision: 0, cerrado: 0, ...agrupar(porEstado, 'clave') },
-      porGravedad: { leve: 0, alta: 0, muy_alta: 0, ...agrupar(porGravedad, 'clave') },
+      porGravedad: { leve: 0, alta: 0, muy_alta: 0, sin_asignar: 0, ...agrupar(porGravedad, 'clave') },
       porTipo: agrupar(porTipo, 'clave'),
       porCurso: porCurso.map((f) => ({ curso: f.clave, total: Number(f.total) })),
       porMes: meses.map((mes) => ({ mes, total: mensual[mes] || 0 })),

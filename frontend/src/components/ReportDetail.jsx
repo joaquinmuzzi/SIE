@@ -33,7 +33,7 @@ const ReportDetail = ({ report, permisos, onBack, onEdit, onChangeState, onClose
   return (
     <div>
       <button onClick={onBack} className="inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-slate-900">
-        <ArrowLeft size={18} /> Informes
+        <ArrowLeft size={18} /> Volver
       </button>
 
       <div className="bg-white border border-slate-200 rounded p-5 mt-4">
@@ -41,7 +41,7 @@ const ReportDetail = ({ report, permisos, onBack, onEdit, onChangeState, onClose
           <Avatar report={report} />
           <div className="min-w-0">
             <p className="font-semibold text-slate-900">{destinatario(report)}</p>
-            <p className="text-sm font-normal text-slate-400">{[curso, responsable && `Responsable: ${responsable}`].filter(Boolean).join(' · ') || 'Informe general'}</p>
+            <p className="text-sm font-normal text-slate-400">{[curso, responsable && `Responsable: ${responsable}`].filter(Boolean).join(' · ') || (report.alcance === 'curso' ? 'Aviso al curso' : 'Aviso a toda la comunidad')}</p>
           </div>
         </div>
         <h1 className="font-semibold text-xl leading-snug mt-4 text-slate-900">{report.titulo}</h1>

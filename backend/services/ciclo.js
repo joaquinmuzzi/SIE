@@ -1,11 +1,12 @@
 // Ciclo de vida de los informes individuales con plazo para el descargo del alumno:
 //   creado -> aviso al alumno -> recordatorio a mitad de plazo -> descargo vencido (pasa a revision) -> cierre automatico
+// Plazos por defecto (correccion del docente, 30/10): 3 dias habiles para el descargo y cierre a los 5 dias habiles.
 // Las reglas son funciones puras (se prueban sin base ni mail); el "ciclo" las aplica con repositorio y mailer inyectados.
 const mensajes = require('./mensajes');
 
 const config = () => ({
-  descargoDiasHabiles: parseInt(process.env.DESCARGO_DIAS_HABILES || '5', 10),
-  cierreDias: parseInt(process.env.CIERRE_DIAS || '15', 10),
+  descargoDiasHabiles: parseInt(process.env.DESCARGO_DIAS_HABILES || '3', 10),
+  cierreDiasHabiles: parseInt(process.env.CIERRE_DIAS_HABILES || '5', 10),
 });
 
 /** Suma dias habiles (lunes a viernes; no contempla feriados). Conserva la hora. */
@@ -20,19 +21,17 @@ function sumarDiasHabiles(desde, dias) {
   return fecha;
 }
 
-const DIA_MS = 24 * 60 * 60 * 1000;
-
 /**
  * Decide que corresponde hacer con un informe en este momento.
  * @returns {'cerrar' | 'vencer' | 'recordar' | null}
  */
-function evaluarInforme(informe, ahora, { cierreDias }) {
+function evaluarInforme(informe, ahora, { cierreDiasHabiles }) {
   if (informe.estado === 'cerrado' || informe.alcance !== 'individual') return null;
   // Los informes anteriores a esta funcionalidad (sin plazo de descargo) no se tocan: el ciclo solo rige para los nuevos
   if (!informe.fecha_limite_descargo) return null;
 
   const creado = new Date(informe.created_at);
-  if (ahora >= new Date(creado.getTime() + cierreDias * DIA_MS)) return 'cerrar';
+  if (ahora >= sumarDiasHabiles(creado, cierreDiasHabiles)) return 'cerrar';
 
   if (informe.descargo_alumno || informe.descargo_vencido) return null;
 

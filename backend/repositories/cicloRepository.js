@@ -33,7 +33,7 @@ const marcarVencido = async (id) => {
 const cerrar = async (id) => {
   const [[antes]] = await pool.query('SELECT estado FROM informes WHERE id_informe = ?', [id]);
   await pool.query("UPDATE informes SET estado = 'cerrado' WHERE id_informe = ?", [id]);
-  anotar({ idInforme: id, accion: 'cierre_automatico', estadoAnterior: antes?.estado, estadoNuevo: 'cerrado', detalle: 'Cierre automático a los 15 días' });
+  anotar({ idInforme: id, accion: 'cierre_automatico', estadoAnterior: antes?.estado, estadoNuevo: 'cerrado', detalle: 'Cierre automático al vencer el plazo' });
 };
 
 module.exports = { listarActivos, marcarRecordatorio, marcarVencido, cerrar };
