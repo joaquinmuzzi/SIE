@@ -30,13 +30,30 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('userInfo', JSON.stringify(actualizado));
   };
 
+  // Trae del servidor los datos vigentes (por ejemplo, si el gestor le asignó la función de PAT)
+  const guardarDatos = (datos) => {
+    setUser((previo) => {
+      const actualizado = { ...previo, ...datos, token: previo?.token };
+      localStorage.setItem('userInfo', JSON.stringify(actualizado));
+      return actualizado;
+    });
+  };
+  const refrescar = async () => {
+    const { data } = await api.get('/auth/me');
+    guardarDatos(data);
+  };
+  const actualizarPerfil = async (cambios) => {
+    const { data } = await api.put('/auth/me', cambios);
+    guardarDatos(data);
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem('userInfo');
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, cambiarClave, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, cambiarClave, refrescar, actualizarPerfil, logout, loading }}>
       {!loading && children}
     </AuthContext.Provider>
   );

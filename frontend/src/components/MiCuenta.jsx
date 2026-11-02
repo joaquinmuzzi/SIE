@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { CheckCircle, Lock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { ROLES, nombreCompleto } from './ui';
 
 const ENTRADA = 'w-full bg-white border border-slate-300 rounded-sm px-3 py-2.5 font-normal focus:outline-none focus:ring-2 focus:ring-brand';
 const ETIQUETA = 'block text-sm font-semibold text-slate-700 mb-1';
@@ -13,7 +12,7 @@ const Dato = ({ titulo, valor }) => (
   </div>
 );
 
-// Datos de la cuenta (solo lectura) y cambio de contraseña del usuario logueado
+// Configuración de la cuenta: acceso y cambio de contraseña (los datos personales están en Mi perfil)
 const MiCuenta = () => {
   const { user, cambiarClave } = useAuth();
   const [actual, setActual] = useState('');
@@ -58,18 +57,15 @@ const MiCuenta = () => {
 
   return (
     <div>
-      <h1 className="text-3xl font-semibold text-slate-900">Mi cuenta</h1>
+      <h1 className="text-3xl font-semibold text-slate-900">Configuración de la cuenta</h1>
 
-      <div className="bg-white border border-slate-200 rounded p-6 mt-5">
-        <h2 className="font-semibold text-slate-900 mb-4">Mis datos</h2>
+      <div className="bg-white border border-slate-200 rounded p-6 mt-5 max-w-xl">
+        <h2 className="font-semibold text-slate-900 mb-4">Acceso</h2>
         <div className="grid sm:grid-cols-2 gap-x-8 gap-y-4 text-[15px]">
-          <Dato titulo="Nombre" valor={nombreCompleto(user)} />
-          <Dato titulo="Correo" valor={user.email} />
-          <Dato titulo="Rol" valor={ROLES[user.rol] || user.rol} />
-          <Dato titulo={user.rol === 'alumno' ? 'Curso' : 'Cargo'} valor={user.rol === 'alumno' ? user.curso : user.cargo} />
-          {user.dni && <Dato titulo="DNI" valor={user.dni} />}
+          <Dato titulo="Usuario (correo)" valor={user.email} />
+          <Dato titulo="Contraseña" valor="Propia (elegida por vos)" />
         </div>
-        <p className="text-xs font-normal text-slate-500 mt-4">Si algún dato es incorrecto, pedile al gestor o directivo de la escuela que lo corrija.</p>
+        <p className="text-xs font-normal text-slate-500 mt-4">Tus datos personales están en Mi perfil.</p>
       </div>
 
       <form onSubmit={enviar} className="bg-white border border-slate-200 rounded p-6 mt-5 space-y-4 max-w-xl">

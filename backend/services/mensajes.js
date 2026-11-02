@@ -4,6 +4,8 @@ const APP_URL = () => process.env.APP_URL || 'https://sistemadegestiondeinformes
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const GRAVEDAD = { leve: 'Leve', alta: 'Alta', muy_alta: 'Muy alta' };
+// Mientras la regencia o el gestor no asignen la gravedad, el aviso no la menciona
+const conGravedad = (informe) => (informe.gravedad ? ` (gravedad: ${GRAVEDAD[informe.gravedad] || informe.gravedad})` : '');
 const ESTADO = { abierto: 'Abierto', en_revision: 'En revisión', cerrado: 'Cerrado' };
 const fechaLarga = (d) => new Date(d).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires' });
 
@@ -28,7 +30,7 @@ const claveTemporal = ({ nombre, email, clave, restablecida }) =>
 const avisoDescargoAlumno = ({ nombre, informe, limite }) =>
   armar('SIE: tenés un informe y podés presentar tu descargo', [
     `Hola ${nombre}:`,
-    `Se registró un informe a tu nombre: «${informe.titulo}» (gravedad: ${GRAVEDAD[informe.gravedad] || informe.gravedad}).`,
+    `Se registró un informe a tu nombre: «${informe.titulo}»${conGravedad(informe)}.`,
     `Tenés derecho a dar tu versión de los hechos. Podés escribir tu descargo en el sistema hasta el ${fechaLarga(limite)}. Pasada esa fecha, el informe sigue su curso sin tu testimonio.`,
   ], { texto: 'Escribir mi descargo', url: APP_URL() });
 
@@ -48,7 +50,7 @@ const descargoVencido = ({ nombre, informe }) =>
 const avisoResponsable = ({ nombreResponsable, nombreAlumno, informe, limite }) =>
   armar(`SIE: nuevo informe de ${nombreAlumno}`, [
     `Hola ${nombreResponsable}:`,
-    `Se registró un informe sobre ${nombreAlumno}: «${informe.titulo}» (gravedad: ${GRAVEDAD[informe.gravedad] || informe.gravedad}).`,
+    `Se registró un informe sobre ${nombreAlumno}: «${informe.titulo}»${conGravedad(informe)}.`,
     limite ? `${nombreAlumno} puede presentar su descargo hasta el ${fechaLarga(limite)}.` : '',
     'Para conocer el detalle, comunicate con la escuela.',
   ].filter(Boolean));

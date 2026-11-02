@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { KeyRound, MailCheck, MailWarning, Trash2, UserPlus } from 'lucide-react';
+import { BadgeCheck, KeyRound, MailCheck, MailWarning, Trash2, UserPlus } from 'lucide-react';
 import api from '../api/axios';
 import { ROLES, nombreCompleto } from './ui';
 import CursosPanel from './CursosPanel';
@@ -8,9 +8,11 @@ const ENTRADA = 'w-full bg-white border border-slate-300 rounded-sm px-3 py-2.5 
 const ETIQUETA = 'block text-sm font-semibold text-slate-700 mb-1';
 const ROLES_CREABLES = ['alumno', 'profesor', 'preceptor', 'regente', 'asesoria_pedagogica', 'secretaria', 'directivo', 'gestor'];
 const ROLES_CON_CARGO = ['gestor', 'directivo', 'regente'];
+// La función de PAT se le asigna a un profesor o preceptor sin cambiarle el rol
+const ROLES_CON_FUNCION_PAT = ['profesor', 'preceptor'];
 const VACIO = {
   nombre: '', apellido: '', email: '', rol: 'alumno', dni: '', telefono: '', cargo: '', id_curso: '',
-  responsable_nombre: '', responsable_email: '', responsable_telefono: '',
+  responsable_nombre: '', responsable_email: '', responsable_telefono: '', es_pat: false,
 };
 
 // Alta de cuentas (gestor/directivo): la clave temporal se genera sola y le llega al correo de la persona
@@ -66,6 +68,22 @@ const ListaUsuarios = ({ user, cursos }) => {
       cargar();
     } catch (err) {
       setAviso({ tipo: 'error', texto: err.response?.data?.message || 'No se pudo restablecer la contraseña' });
+    }
+  };
+
+  const cambiarFuncionPat = async (u) => {
+    const asignar = !u.es_pat;
+    const texto = asignar
+      ? `¿Asignarle la función de PAT a ${nombreCompleto(u)}? Va a poder redactar el texto del PAT en los informes.`
+      : `¿Quitarle la función de PAT a ${nombreCompleto(u)}?`;
+    if (!window.confirm(texto)) return;
+    setAviso(null);
+    try {
+      await api.patch(`/auth/users/${u._id}/pat`, { es_pat: asignar });
+      setAviso({ tipo: 'ok', texto: asignar ? `${nombreCompleto(u)} ahora cumple la función de PAT.` : `${nombreCompleto(u)} ya no cumple la función de PAT.` });
+      cargar();
+    } catch (err) {
+      setAviso({ tipo: 'error', texto: err.response?.data?.message || 'No se pudo cambiar la función de PAT' });
     }
   };
 
@@ -142,6 +160,16 @@ const ListaUsuarios = ({ user, cursos }) => {
             )}
           </div>
 
+          {ROLES_CON_FUNCION_PAT.includes(form.rol) && (
+            <label className="flex items-start gap-3 bg-slate-50 border border-slate-200 rounded-sm px-3 py-2.5 cursor-pointer">
+              <input type="checkbox" className="mt-1 accent-brand" checked={form.es_pat} onChange={(e) => setForm({ ...form, es_pat: e.target.checked })} />
+              <span>
+                <span className="block text-sm font-semibold text-slate-800">Cumple la función de PAT</span>
+                <span className="block text-xs font-normal text-slate-500">Sigue siendo {ROLES[form.rol].toLowerCase()}, y además puede redactar el texto del PAT en los informes.</span>
+              </span>
+            </label>
+          )}
+
           {form.rol === 'alumno' && (
             <div className="border-t border-slate-200 pt-4">
               <p className="font-semibold text-slate-800">Responsable del alumno (padre, madre o tutor)</p>
@@ -181,10 +209,18 @@ const ListaUsuarios = ({ user, cursos }) => {
             {visibles.map((u) => (
               <tr key={u._id}>
                 <td className="px-4 py-3 font-medium text-slate-900">{nombreCompleto(u)}{u.curso && <span className="block text-xs font-normal text-slate-400">{u.curso}</span>}</td>
-                <td className="px-4 py-3 text-slate-600">{ROLES[u.rol] || u.rol}</td>
+                <td className="px-4 py-3 text-slate-600">
+                  {ROLES[u.rol] || u.rol}
+                  {Boolean(u.es_pat) && <span className="ml-1.5 inline-flex rounded-sm bg-violet-50 px-1.5 py-0.5 text-[11px] font-semibold text-violet-700 ring-1 ring-inset ring-violet-200">PAT</span>}
+                </td>
                 <td className="px-4 py-3 text-slate-600">{u.email}</td>
                 <td className="px-4 py-3">{u.debe_cambiar_clave ? <span className="text-amber-700 font-medium">Temporal, sin estrenar</span> : <span className="text-slate-500">Propia</span>}</td>
                 <td className="px-4 py-3 text-right whitespace-nowrap">
+                  {ROLES_CON_FUNCION_PAT.includes(u.rol) && (
+                    <button onClick={() => cambiarFuncionPat(u)} className="inline-flex items-center gap-1 text-slate-500 hover:text-violet-700 font-medium mr-4" title={u.es_pat ? 'Quitar la función de PAT' : 'Asignar la función de PAT'}>
+                      <BadgeCheck size={15} /> {u.es_pat ? 'Quitar PAT' : 'Asignar PAT'}
+                    </button>
+                  )}
                   <button onClick={() => eliminar(u)} className="inline-flex items-center gap-1 text-slate-400 hover:text-red-700 font-medium mr-4" title="Eliminar la cuenta (solo si no tiene informes)">
                     <Trash2 size={15} /> Eliminar
                   </button>

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ArrowLeft, CheckCircle, Clock, Download, MessageSquare, Pencil, Send, Trash2 } from 'lucide-react';
 import HistorialInforme from './HistorialInforme';
 import {
-  Avatar, BarraAvance, Etiquetas, ROLES, destinatario, etapaActual, etapas, fechaCorta, intervenciones, nombreCompleto,
+  Avatar, BarraAvance, Etiquetas, ROLES, esAviso, destinatario, etapaActual, etapas, fechaCorta, intervenciones, nombreCompleto,
 } from './ui';
 
 const ReportDetail = ({ report, permisos, onBack, onEdit, onChangeState, onClose, onDownload, onDescargo }) => {
@@ -22,6 +22,7 @@ const ReportDetail = ({ report, permisos, onBack, onEdit, onChangeState, onClose
     }
   };
 
+  const nombre = esAviso(report) ? 'aviso' : 'informe';
   const voces = intervenciones(report);
   const pasos = etapas(report);
   const curso = report.alcance === 'individual' ? report.alumno?.curso : null;
@@ -33,7 +34,7 @@ const ReportDetail = ({ report, permisos, onBack, onEdit, onChangeState, onClose
   return (
     <div>
       <button onClick={onBack} className="inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-slate-900">
-        <ArrowLeft size={18} /> Informes
+        <ArrowLeft size={18} /> Volver
       </button>
 
       <div className="bg-white border border-slate-200 rounded p-5 mt-4">
@@ -41,7 +42,7 @@ const ReportDetail = ({ report, permisos, onBack, onEdit, onChangeState, onClose
           <Avatar report={report} />
           <div className="min-w-0">
             <p className="font-semibold text-slate-900">{destinatario(report)}</p>
-            <p className="text-sm font-normal text-slate-400">{[curso, responsable && `Responsable: ${responsable}`].filter(Boolean).join(' · ') || 'Informe general'}</p>
+            <p className="text-sm font-normal text-slate-400">{[curso, responsable && `Responsable: ${responsable}`].filter(Boolean).join(' · ') || (report.alcance === 'curso' ? 'Aviso al curso' : 'Aviso a toda la comunidad')}</p>
           </div>
         </div>
         <h1 className="font-semibold text-xl leading-snug mt-4 text-slate-900">{report.titulo}</h1>
@@ -77,9 +78,9 @@ const ReportDetail = ({ report, permisos, onBack, onEdit, onChangeState, onClose
         </div>
       )}
 
-      <h2 className="font-semibold text-slate-900 mt-6 mb-3">Intervenciones</h2>
+      <h2 className="font-semibold text-slate-900 mt-6 mb-3">{esAviso(report) ? 'Texto del aviso' : 'Intervenciones'}</h2>
       {voces.length === 0 ? (
-        <p className="text-sm font-normal text-slate-400">Todavía no hay intervenciones.</p>
+        <p className="text-sm font-normal text-slate-400">{esAviso(report) ? 'El aviso no tiene texto.' : 'Todavía no hay intervenciones.'}</p>
       ) : (
         <div className="space-y-3">
           {voces.map((v) => (
@@ -115,7 +116,7 @@ const ReportDetail = ({ report, permisos, onBack, onEdit, onChangeState, onClose
         </form>
       )}
 
-      <HistorialInforme idInforme={report._id} />
+      <HistorialInforme idInforme={report._id} nombre={nombre} />
 
       {error && <p className="mt-4 text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-sm px-3 py-2">{error}</p>}
 
@@ -132,7 +133,7 @@ const ReportDetail = ({ report, permisos, onBack, onEdit, onChangeState, onClose
         )}
         {permisos.cambiarEstado && report.estado === 'en_revision' && (
           <button disabled={ocupado} onClick={() => ejecutar(() => onChangeState('cerrado'))} className="flex-1 min-w-[140px] bg-brand hover:bg-brand-dark text-white font-semibold rounded-sm py-3 flex items-center justify-center gap-2 disabled:opacity-50">
-            <CheckCircle size={16} /> Finalizar informe
+            <CheckCircle size={16} /> Finalizar {nombre}
           </button>
         )}
         {report.estado === 'cerrado' && (
@@ -142,7 +143,7 @@ const ReportDetail = ({ report, permisos, onBack, onEdit, onChangeState, onClose
         )}
         {permisos.cerrar && report.estado !== 'cerrado' && (
           <button disabled={ocupado} onClick={() => ejecutar(onClose)} className="flex-1 min-w-[140px] bg-white border border-red-200 text-red-700 font-semibold rounded-sm py-3 flex items-center justify-center gap-2 disabled:opacity-50">
-            <Trash2 size={16} /> Cerrar informe
+            <Trash2 size={16} /> Cerrar {nombre}
           </button>
         )}
       </div>

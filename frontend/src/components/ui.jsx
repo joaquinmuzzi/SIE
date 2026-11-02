@@ -20,6 +20,8 @@ export const ROLES = {
   directivo: 'Directivo',
   secretaria: 'Secretaría',
   asesoria_pedagogica: 'Asesoría / DOE / PAT',
+  doe: 'DOE',
+  pat: 'PAT',
   alumno: 'Alumno',
 };
 
@@ -30,6 +32,12 @@ export const TIPOS = {
 };
 
 export const GRAVEDADES = { leve: 'Leve', alta: 'Alta', muy_alta: 'Muy alta' };
+// La gravedad la asignan solo el gestor y la regencia; mientras tanto el informe queda "sin gravedad"
+export const ROLES_GRAVEDAD = ['gestor', 'regente'];
+// Plazos del ciclo de vida (los mismos que usa el servidor por defecto)
+export const PLAZOS = { descargo: 3, cierre: 5 };
+// Los avisos van a un curso o a toda la comunidad; los informes, a un alumno
+export const esAviso = (report) => report.alcance === 'curso' || report.alcance === 'todos';
 export const ESTADOS = { abierto: 'Abierto', en_revision: 'En revisión', cerrado: 'Cerrado' };
 
 // Tonos apagados; el rojo queda reservado para la gravedad "Muy alta"
@@ -37,6 +45,7 @@ export const GRAVEDAD_ESTILO = {
   leve: 'bg-slate-50 text-slate-600 ring-slate-200',
   alta: 'bg-amber-50 text-amber-800 ring-amber-200',
   muy_alta: 'bg-red-50 text-red-800 ring-red-200',
+  sin: 'bg-white text-slate-400 ring-slate-200',
 };
 const ESTADO_ESTILO = {
   abierto: 'bg-teal-50 text-teal-800 ring-teal-200',
@@ -50,9 +59,12 @@ export const Chip = ({ className = 'bg-white text-slate-500 ring-slate-200', chi
   </span>
 );
 
-export const ChipGravedad = ({ report }) => (
-  <Chip className={GRAVEDAD_ESTILO[report.gravedad] || GRAVEDAD_ESTILO.leve}>{GRAVEDADES[report.gravedad] || report.gravedad}</Chip>
-);
+export const ChipGravedad = ({ report }) =>
+  report.gravedad ? (
+    <Chip className={GRAVEDAD_ESTILO[report.gravedad] || GRAVEDAD_ESTILO.leve}>{GRAVEDADES[report.gravedad] || report.gravedad}</Chip>
+  ) : (
+    <Chip className={GRAVEDAD_ESTILO.sin}>Sin gravedad</Chip>
+  );
 
 export const ChipEstado = ({ report }) => (
   <Chip className={ESTADO_ESTILO[report.estado] || ESTADO_ESTILO.abierto}>{ESTADOS[report.estado] || report.estado}</Chip>
@@ -60,9 +72,9 @@ export const ChipEstado = ({ report }) => (
 
 export const Etiquetas = ({ report }) => (
   <div className="flex flex-wrap gap-1.5">
-    <ChipGravedad report={report} />
+    {!esAviso(report) && <ChipGravedad report={report} />}
     <ChipEstado report={report} />
-    <Chip>{TIPOS[report.tipo] || report.tipo}</Chip>
+    {!esAviso(report) && report.tipo && <Chip>{TIPOS[report.tipo] || report.tipo}</Chip>}
   </div>
 );
 
@@ -107,7 +119,9 @@ export const BarraAvance = ({ report }) => (
 );
 
 export const intervenciones = (report) =>
-  [
+  esAviso(report)
+    ? [report.texto_profesor && { quien: 'Aviso', texto: report.texto_profesor, borde: 'border-l-brand' }].filter(Boolean)
+    : [
     report.texto_profesor && { quien: 'Profesor', texto: report.texto_profesor, borde: 'border-l-sky-600' },
     report.texto_regente && { quien: 'Regente', texto: report.texto_regente, borde: 'border-l-brand' },
     report.texto_pat && { quien: 'PAT', texto: report.texto_pat, borde: 'border-l-violet-600' },

@@ -5,6 +5,7 @@ const { sumarDiasHabiles, config } = require('../services/ciclo');
 const { pool } = require('../config/db');
 const { etiquetaCurso } = require('../services/cursos');
 const historial = require('../repositories/historialRepository');
+const { puedeAsignarGravedad, camposEditables, leerGravedad } = require('../services/permisos');
 
 // El historial es un registro auxiliar: si falla, no debe romper la operacion
 const anotar = (datos) => historial.registrar(datos).catch((e) => console.error('[historial]', e.message));
@@ -47,6 +48,10 @@ exports.getReports = async (req, res) => {
     const q = String(req.query.q || '').trim().slice(0, 100);
     if (q) {
       filters.q = q;
+    }
+    // El panel separa los informes (a un alumno) de los avisos (a un curso o a toda la comunidad)
+    if (['informes', 'avisos'].includes(req.query.grupo)) {
+      filters.grupo = req.query.grupo;
     }
     const cursoFiltro = String(req.query.curso || '').trim().slice(0, 40);
     if (cursoFiltro && rol !== 'alumno') {
@@ -105,13 +110,29 @@ exports.createReport = async (req, res) => {
       }
     }
 
+    // La gravedad solo la asignan el gestor o la regencia, y solo en informes a un alumno
+    let gravedadFinal = null;
+    if (alcanceFinal === 'individual' && puedeAsignarGravedad(req.user) && gravedad) {
+      gravedadFinal = leerGravedad(gravedad);
+      if (gravedadFinal === undefined) {
+        return res.status(400).json({ message: 'Gravedad invalida. Valores permitidos: leve, alta, muy_alta' });
+      }
+    }
+
+    const TIPOS = ['conducta', 'consejo_aula', 'consejo_convivencia'];
+    if (alcanceFinal === 'individual' && tipo && !TIPOS.includes(tipo)) {
+      return res.status(400).json({ message: 'Tipo invalido. Valores permitidos: conducta, consejo_aula, consejo_convivencia' });
+    }
+
     const report = await Report.create({
       titulo,
-      tipo,
-      gravedad,
-      texto_profesor,
-      texto_regente,
-      texto_pat,
+      // Los avisos (a un curso o a toda la comunidad) no tienen tipo de conducta ni gravedad
+      tipo: alcanceFinal === 'individual' ? tipo || 'conducta' : null,
+      gravedad: gravedadFinal,
+      // Un aviso tiene un solo texto, sin importar el rol de quien lo escribe
+      texto_profesor: alcanceFinal === 'individual' ? texto_profesor : texto_profesor || texto_regente || texto_pat,
+      texto_regente: alcanceFinal === 'individual' ? texto_regente : null,
+      texto_pat: alcanceFinal === 'individual' ? texto_pat : null,
       alcance: alcanceFinal,
       curso_destino: alcanceFinal === 'curso' ? curso_destino : null,
       id_alumno: alcanceFinal === 'individual' ? id_alumno : null,
@@ -141,38 +162,29 @@ exports.updateReport = async (req, res) => {
     }
 
     const rol = req.user.rol;
-    const updateData = {};
+    const permitidos = camposEditables(req.user, report);
+    if (!permitidos.size) {
+      return res.status(403).json({
+        message: ['profesor', 'preceptor'].includes(rol)
+          ? 'Solo el docente que creo el informe puede editar su texto'
+          : `El rol ${rol} no puede editar informes`,
+      });
+    }
 
-    if (rol === 'gestor' || rol === 'directivo') {
-      updateData.titulo = req.body.titulo;
-      updateData.tipo = req.body.tipo;
-      updateData.gravedad = req.body.gravedad;
-      updateData.estado = req.body.estado;
-      updateData.id_alumno = req.body.id_alumno;
-      updateData.texto_profesor = req.body.texto_profesor;
-      updateData.texto_regente = req.body.texto_regente;
-      updateData.texto_pat = req.body.texto_pat;
-    } else if (rol === 'profesor' || rol === 'preceptor') {
-      if (report.creadoPor._id !== req.user.id_usuario) {
-        return res.status(403).json({ message: 'Solo el docente que creo el informe puede editar su texto' });
+    const updateData = {};
+    for (const campo of permitidos) {
+      if (req.body[campo] !== undefined) updateData[campo] = req.body[campo];
+    }
+    if (updateData.gravedad !== undefined) {
+      updateData.gravedad = leerGravedad(updateData.gravedad);
+      if (updateData.gravedad === undefined) {
+        return res.status(400).json({ message: 'Gravedad invalida. Valores permitidos: leve, alta, muy_alta' });
       }
-      if (req.body.texto_profesor !== undefined) {
-        updateData.texto_profesor = req.body.texto_profesor;
-      }
-    } else if (rol === 'regente') {
-      if (req.body.texto_regente !== undefined) {
-        updateData.texto_regente = req.body.texto_regente;
-      }
-    } else if (rol === 'asesoria_pedagogica' || rol === 'doe' || rol === 'pat') {
-      if (req.body.texto_pat !== undefined) {
-        updateData.texto_pat = req.body.texto_pat;
-      }
-    } else {
-      return res.status(403).json({ message: `El rol ${rol} no puede editar informes` });
     }
 
     const updatedReport = await Report.update(req.params.id, updateData);
-    const campos = Object.keys(updateData).filter((k) => updateData[k] !== undefined);
+    // En el historial figuran solo los campos que de verdad cambiaron (el formulario manda todos)
+    const campos = Object.keys(updateData).filter((k) => updateData[k] !== undefined && String(updateData[k] ?? '') !== String((k === 'id_alumno' ? report.alumno?._id : report[k]) ?? ''));
     if (campos.length) {
       anotar({ idInforme: report._id, usuarioId: req.user.id_usuario, accion: 'editado', detalle: campos.join(', ').slice(0, 250) });
     }

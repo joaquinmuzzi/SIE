@@ -26,6 +26,41 @@ async function migrar() {
   await asegurarColumna('usuarios', 'responsable_email', 'VARCHAR(150) NULL');
   await asegurarColumna('usuarios', 'responsable_telefono', 'VARCHAR(30) NULL');
 
+  // Funcion de PAT asignable a un profesor o preceptor (sin crear otro rol)
+  await asegurarColumna('usuarios', 'es_pat', 'TINYINT(1) NOT NULL DEFAULT 0');
+
+  // La gravedad la asignan solo el gestor o la regencia: un informe nuevo puede quedar "sin asignar"
+  const [[grav]] = await pool.query(
+    `SELECT IS_NULLABLE AS nulo FROM information_schema.columns
+      WHERE table_schema = DATABASE() AND table_name = 'informes' AND column_name = 'gravedad'`
+  );
+  if (grav && grav.nulo === 'NO') {
+    await pool.query('ALTER TABLE informes MODIFY gravedad VARCHAR(20) NULL DEFAULT NULL');
+    console.log('[migracion] informes.gravedad admite "sin asignar"');
+  }
+
+  // Los avisos (a un curso o a toda la comunidad) no tienen tipo de conducta ni gravedad
+  const [[tipo]] = await pool.query(
+    `SELECT IS_NULLABLE AS nulo FROM information_schema.columns
+      WHERE table_schema = DATABASE() AND table_name = 'informes' AND column_name = 'tipo'`
+  );
+  if (tipo && tipo.nulo === 'NO') {
+    await pool.query('ALTER TABLE informes MODIFY tipo VARCHAR(30) NULL DEFAULT NULL');
+    console.log('[migracion] informes.tipo admite avisos sin tipo');
+  }
+  const [avisos] = await pool.query(
+    "UPDATE informes SET tipo = NULL, gravedad = NULL WHERE alcance IN ('curso', 'todos') AND (tipo IS NOT NULL OR gravedad IS NOT NULL)"
+  );
+  if (avisos.affectedRows) console.log(`[migracion] ${avisos.affectedRows} aviso(s) sin tipo ni gravedad`);
+  // Un aviso tiene un solo texto (columna texto_profesor): se juntan los que hubiera escrito la regencia o el PAT
+  const [textos] = await pool.query(
+    `UPDATE informes
+        SET texto_profesor = NULLIF(CONCAT_WS('\n\n', NULLIF(texto_profesor, ''), NULLIF(texto_regente, ''), NULLIF(texto_pat, '')), ''),
+            texto_regente = NULL, texto_pat = NULL
+      WHERE alcance IN ('curso', 'todos') AND (texto_regente IS NOT NULL OR texto_pat IS NOT NULL)`
+  );
+  if (textos.affectedRows) console.log(`[migracion] ${textos.affectedRows} aviso(s) con un solo texto`);
+
   await asegurarColumna('informes', 'fecha_limite_descargo', 'DATETIME NULL');
   await asegurarColumna('informes', 'recordatorio_enviado', 'TINYINT(1) NOT NULL DEFAULT 0');
   await asegurarColumna('informes', 'descargo_vencido', 'TINYINT(1) NOT NULL DEFAULT 0');

@@ -98,6 +98,7 @@ const EstadisticasPanel = ({ cursos }) => {
             { etiqueta: GRAVEDADES.leve, valor: datos.porGravedad.leve, color: 'bg-slate-400' },
             { etiqueta: GRAVEDADES.alta, valor: datos.porGravedad.alta, color: 'bg-amber-500' },
             { etiqueta: GRAVEDADES.muy_alta, valor: datos.porGravedad.muy_alta, color: 'bg-red-700' },
+            { etiqueta: 'Sin asignar', valor: datos.porGravedad.sin_asignar || 0, color: 'bg-slate-200' },
           ]} />
           <h3 className="text-sm font-semibold text-slate-700 mt-5 mb-3">Por tipo</h3>
           <Barras filas={Object.entries(datos.porTipo).map(([k, v]) => ({ etiqueta: TIPOS[k] || k, valor: v }))} />
