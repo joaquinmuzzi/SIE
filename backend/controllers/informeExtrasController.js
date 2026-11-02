@@ -54,7 +54,7 @@ exports.getEstadisticas = async (req, res) => {
       q(`SELECT i.estado AS clave, COUNT(*) AS total ${desde} GROUP BY i.estado`),
       // Los avisos no llevan gravedad: se cuentan solo los informes a un alumno
       q(`SELECT COALESCE(i.gravedad, 'sin_asignar') AS clave, COUNT(*) AS total ${base} ${y("i.alcance = 'individual'")} GROUP BY COALESCE(i.gravedad, 'sin_asignar')`),
-      q(`SELECT i.tipo AS clave, COUNT(*) AS total ${desde} GROUP BY i.tipo`),
+      q(`SELECT i.tipo AS clave, COUNT(*) AS total ${base} ${y("i.alcance = 'individual'")} GROUP BY i.tipo`),
       q(`SELECT COALESCE(al.curso, i.curso_destino) AS clave, COUNT(*) AS total ${base} ${y("i.alcance <> 'todos'")}
           GROUP BY COALESCE(al.curso, i.curso_destino) ORDER BY total DESC, clave LIMIT 10`),
       q(`SELECT DATE_FORMAT(i.fecha, '%Y-%m') AS clave, COUNT(*) AS total ${base} ${y("i.fecha >= DATE_SUB(DATE_FORMAT(NOW(), '%Y-%m-01'), INTERVAL 5 MONTH)")}

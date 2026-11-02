@@ -15,7 +15,9 @@ const esAviso = (alcance) => alcance === 'curso' || alcance === 'todos';
 function camposEditables(user, report) {
   const campos = new Set();
   if (['gestor', 'directivo'].includes(user.rol)) {
-    ['titulo', 'tipo', 'estado', 'id_alumno', 'texto_profesor', 'texto_regente', 'texto_pat'].forEach((c) => campos.add(c));
+    ['titulo', 'estado', 'id_alumno', 'texto_profesor', 'texto_regente', 'texto_pat'].forEach((c) => campos.add(c));
+    // Los avisos no tienen tipo de conducta
+    if (!esAviso(report.alcance)) campos.add('tipo');
   }
   if (['profesor', 'preceptor'].includes(user.rol) && report.creadoPor && report.creadoPor._id === user.id_usuario) {
     campos.add('texto_profesor');

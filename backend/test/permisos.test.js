@@ -24,6 +24,10 @@ describe('gravedad', () => {
     assert.ok(campos.has('texto_profesor'));
     assert.ok(!campos.has('gravedad'));
   });
+  test('[limite] los avisos no tienen tipo de conducta: ni el gestor puede ponerselo', () => {
+    assert.ok(!camposEditables(usuario('gestor'), informe({ alcance: 'curso' })).has('tipo'));
+    assert.ok(camposEditables(usuario('gestor'), informe()).has('tipo'));
+  });
   test('[limite] los avisos (curso o comunidad) no llevan gravedad', () => {
     assert.ok(!camposEditables(usuario('gestor'), informe({ alcance: 'curso' })).has('gravedad'));
     assert.ok(!camposEditables(usuario('regente'), informe({ alcance: 'todos' })).has('gravedad'));

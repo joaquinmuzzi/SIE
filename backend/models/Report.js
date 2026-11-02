@@ -174,7 +174,7 @@ const Report = {
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         data.titulo,
-        data.tipo || 'conducta',
+        data.tipo || null,
         data.gravedad || null,
         data.estado || 'abierto',
         data.alcance || 'individual',

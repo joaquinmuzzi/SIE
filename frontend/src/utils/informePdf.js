@@ -86,7 +86,7 @@ export function generarInformePdf(report) {
     x = etiqueta(`Gravedad: ${GRAVEDADES[report.gravedad] || 'sin asignar'}`, ESTILO_GRAVEDAD[report.gravedad] || [GRIS, LINEA], x);
   }
   x = etiqueta(`Estado: ${ESTADOS[report.estado] || report.estado}`, ESTILO_ESTADO[report.estado] || ESTILO_ESTADO.abierto, x);
-  etiqueta(TIPOS[report.tipo] || report.tipo, [GRIS, LINEA], x);
+  if (report.alcance === 'individual' && report.tipo) etiqueta(TIPOS[report.tipo] || report.tipo, [GRIS, LINEA], x);
   y += 13;
 
   // ---- Datos del informe (recuadro de dos columnas)

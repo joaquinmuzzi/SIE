@@ -74,7 +74,7 @@ export const Etiquetas = ({ report }) => (
   <div className="flex flex-wrap gap-1.5">
     {!esAviso(report) && <ChipGravedad report={report} />}
     <ChipEstado report={report} />
-    <Chip>{TIPOS[report.tipo] || report.tipo}</Chip>
+    {!esAviso(report) && report.tipo && <Chip>{TIPOS[report.tipo] || report.tipo}</Chip>}
   </div>
 );
 

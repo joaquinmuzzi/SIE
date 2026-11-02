@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS cursos (
 CREATE TABLE IF NOT EXISTS informes (
   id_informe            INT AUTO_INCREMENT,
   titulo                VARCHAR(200)   NOT NULL,
-  tipo                  VARCHAR(30)    NOT NULL DEFAULT 'conducta',
+  tipo                  VARCHAR(30)    NULL DEFAULT NULL,
   gravedad              VARCHAR(20)    NULL DEFAULT NULL,
   estado                VARCHAR(20)    NOT NULL DEFAULT 'abierto',
   alcance               VARCHAR(20)    NOT NULL DEFAULT 'individual',

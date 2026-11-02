@@ -119,9 +119,15 @@ exports.createReport = async (req, res) => {
       }
     }
 
+    const TIPOS = ['conducta', 'consejo_aula', 'consejo_convivencia'];
+    if (alcanceFinal === 'individual' && tipo && !TIPOS.includes(tipo)) {
+      return res.status(400).json({ message: 'Tipo invalido. Valores permitidos: conducta, consejo_aula, consejo_convivencia' });
+    }
+
     const report = await Report.create({
       titulo,
-      tipo,
+      // Los avisos (a un curso o a toda la comunidad) no tienen tipo de conducta ni gravedad
+      tipo: alcanceFinal === 'individual' ? tipo || 'conducta' : null,
       gravedad: gravedadFinal,
       texto_profesor,
       texto_regente,

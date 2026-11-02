@@ -10,7 +10,7 @@ const GRAVEDAD_ACTIVA = { leve: 'bg-slate-100 text-slate-800 ring-slate-400', al
 const ALCANCES_AVISO = [['curso', 'Un curso'], ['todos', 'Toda la comunidad']];
 
 const vacio = (modo) => ({
-  titulo: '', tipo: 'conducta', gravedad: '', alcance: modo === 'aviso' ? 'curso' : 'individual', curso_destino: '',
+  titulo: '', tipo: modo === 'aviso' ? '' : 'conducta', gravedad: '', alcance: modo === 'aviso' ? 'curso' : 'individual', curso_destino: '',
   texto_profesor: '', texto_regente: '', texto_pat: '', id_alumno: '',
 });
 
@@ -32,7 +32,7 @@ const Frases = ({ campo, valor, onAgregar }) => (
 
 const desdeInforme = (r) => ({
   titulo: r.titulo,
-  tipo: r.tipo,
+  tipo: r.tipo || '',
   gravedad: r.gravedad || '',
   alcance: r.alcance || 'individual',
   curso_destino: r.curso_destino || '',
@@ -83,6 +83,7 @@ const ReportForm = ({ report, modo = 'informe', permisos, alumnos, cursos: catal
     // La gravedad solo la envían el gestor y la regencia, y solo en los informes
     const datos = { ...form };
     if (esAviso || !permisos.gravedad) delete datos.gravedad;
+    if (esAviso) delete datos.tipo;
     try {
       await onSubmit(datos);
     } catch (err) {
@@ -109,6 +110,8 @@ const ReportForm = ({ report, modo = 'informe', permisos, alumnos, cursos: catal
           {!bloquearDatos && <p className="text-xs font-normal text-slate-500 mt-1">Empezá a escribir y elegí una sugerencia, o escribí un título propio.</p>}
         </div>
 
+        {/* Los avisos no tienen tipo de conducta ni gravedad */}
+        {!esAviso && (
         <div className="grid sm:grid-cols-2 gap-5">
           <div>
             <label className={ETIQUETA}>Tipo</label>
@@ -144,8 +147,9 @@ const ReportForm = ({ report, modo = 'informe', permisos, alumnos, cursos: catal
             </div>
           ))}
         </div>
+        )}
         {bloquearDatos && (
-          <p className="text-xs font-normal text-slate-500 -mt-2">El título y el tipo solo pueden modificarlos un Gestor o Directivo.</p>
+          <p className="text-xs font-normal text-slate-500 -mt-2">{esAviso ? 'El título solo pueden modificarlo' : 'El título y el tipo solo pueden modificarlos'} un Gestor o Directivo.</p>
         )}
 
         {esAviso && (

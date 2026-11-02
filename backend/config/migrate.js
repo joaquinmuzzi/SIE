@@ -39,6 +39,20 @@ async function migrar() {
     console.log('[migracion] informes.gravedad admite "sin asignar"');
   }
 
+  // Los avisos (a un curso o a toda la comunidad) no tienen tipo de conducta ni gravedad
+  const [[tipo]] = await pool.query(
+    `SELECT IS_NULLABLE AS nulo FROM information_schema.columns
+      WHERE table_schema = DATABASE() AND table_name = 'informes' AND column_name = 'tipo'`
+  );
+  if (tipo && tipo.nulo === 'NO') {
+    await pool.query('ALTER TABLE informes MODIFY tipo VARCHAR(30) NULL DEFAULT NULL');
+    console.log('[migracion] informes.tipo admite avisos sin tipo');
+  }
+  const [avisos] = await pool.query(
+    "UPDATE informes SET tipo = NULL, gravedad = NULL WHERE alcance IN ('curso', 'todos') AND (tipo IS NOT NULL OR gravedad IS NOT NULL)"
+  );
+  if (avisos.affectedRows) console.log(`[migracion] ${avisos.affectedRows} aviso(s) sin tipo ni gravedad`);
+
   await asegurarColumna('informes', 'fecha_limite_descargo', 'DATETIME NULL');
   await asegurarColumna('informes', 'recordatorio_enviado', 'TINYINT(1) NOT NULL DEFAULT 0');
   await asegurarColumna('informes', 'descargo_vencido', 'TINYINT(1) NOT NULL DEFAULT 0');

@@ -8,15 +8,15 @@ const CAMPOS = {
   texto_profesor: 'el texto del profesor', texto_regente: 'el texto del regente', texto_pat: 'el texto del PAT',
 };
 
-const describir = (e) => {
+const describir = (e, nombre) => {
   switch (e.accion) {
-    case 'creado': return { icono: FilePlus, texto: 'Creó el informe' };
+    case 'creado': return { icono: FilePlus, texto: `Creó el ${nombre}` };
     case 'estado': return { icono: RefreshCw, texto: `Cambió el estado de «${ESTADOS[e.estado_anterior] || e.estado_anterior}» a «${ESTADOS[e.estado_nuevo] || e.estado_nuevo}»` };
     case 'editado': return { icono: Edit3, texto: `Editó ${(e.detalle || '').split(', ').map((c) => CAMPOS[c] || c).join(', ')}` };
     case 'descargo': return { icono: MessageSquare, texto: 'Presentó su descargo' };
     case 'recordatorio': return { icono: Bell, texto: 'Se envió el recordatorio de descargo al alumno' };
     case 'plazo_vencido': return { icono: Clock, texto: `Venció el plazo de descargo: el informe pasó a «${ESTADOS[e.estado_nuevo] || e.estado_nuevo}»` };
-    case 'cierre_automatico': return { icono: CheckCircle, texto: 'El informe se cerró automáticamente al vencer el plazo' };
+    case 'cierre_automatico': return { icono: CheckCircle, texto: `El ${nombre} se cerró automáticamente al vencer el plazo` };
     default: return { icono: Edit3, texto: e.accion };
   }
 };
@@ -24,7 +24,7 @@ const describir = (e) => {
 const cuando = (f) => new Date(f).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
 // Linea de tiempo de un informe: quien hizo que y cuando (las acciones automaticas figuran como «Sistema»)
-const HistorialInforme = ({ idInforme }) => {
+const HistorialInforme = ({ idInforme, nombre = 'informe' }) => {
   const [eventos, setEventos] = useState(null);
 
   useEffect(() => {
@@ -40,7 +40,7 @@ const HistorialInforme = ({ idInforme }) => {
       <h2 className="font-semibold text-slate-900 mb-3">Historial</h2>
       <ol className="bg-white border border-slate-200 rounded divide-y divide-slate-100">
         {eventos.map((e) => {
-          const { icono: Icono, texto } = describir(e);
+          const { icono: Icono, texto } = describir(e, nombre);
           const quien = e.nombre ? `${nombreCompleto(e)}${e.rol ? ` (${ROLES[e.rol] || e.rol})` : ''}` : 'Sistema';
           return (
             <li key={`${e._id}-${e.accion}-${e.fecha}`} className="flex items-start gap-3 px-4 py-3">
