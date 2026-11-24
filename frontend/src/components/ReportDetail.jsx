@@ -130,12 +130,12 @@ const ReportDetail = ({ report, permisos, onBack, onEdit, onChangeState, onClose
             <Pencil size={16} /> Editar
           </button>
         )}
-        {permisos.cambiarEstado && report.estado === 'abierto' && (
+        {!esAviso(report) && permisos.cambiarEstado && report.estado === 'abierto' && (
           <button disabled={ocupado} onClick={() => ejecutar(() => onChangeState('en_revision'))} className="flex-1 min-w-[140px] bg-slate-900 text-white font-semibold rounded-sm py-3 flex items-center justify-center gap-2 disabled:opacity-50">
             <CheckCircle size={16} /> Poner en revisión
           </button>
         )}
-        {permisos.cambiarEstado && report.estado === 'en_revision' && (
+        {!esAviso(report) && permisos.cambiarEstado && report.estado === 'en_revision' && (
           <button disabled={ocupado} onClick={() => ejecutar(() => onChangeState('cerrado'))} className="flex-1 min-w-[140px] bg-brand hover:bg-brand-dark text-white font-semibold rounded-sm py-3 flex items-center justify-center gap-2 disabled:opacity-50">
             <CheckCircle size={16} /> Finalizar {nombre}
           </button>
@@ -145,7 +145,7 @@ const ReportDetail = ({ report, permisos, onBack, onEdit, onChangeState, onClose
             <Download size={16} /> Descargar PDF
           </button>
         )}
-        {permisos.cerrar && report.estado !== 'cerrado' && (
+        {!esAviso(report) && permisos.cerrar && report.estado !== 'cerrado' && (
           <button disabled={ocupado} onClick={() => ejecutar(onClose)} className="flex-1 min-w-[140px] bg-white border border-red-200 text-red-700 font-semibold rounded-sm py-3 flex items-center justify-center gap-2 disabled:opacity-50">
             <Trash2 size={16} /> Cerrar {nombre}
           </button>
