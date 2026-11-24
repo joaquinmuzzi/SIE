@@ -1,4 +1,5 @@
 import { jsPDF } from 'jspdf';
+import { generarFormularioConvivencia } from './formularioConvivencia.js';
 
 // PDF del informe: encabezado institucional, datos en recuadro, una seccion por intervencion y pie con paginacion.
 // Es autocontenido (sin JSX) para poder probarlo fuera de la aplicacion.
@@ -30,6 +31,8 @@ const fecha = (f) => (f ? new Date(f).toLocaleDateString('es-AR') : '—');
 const fechaHora = (f) => new Date(f).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' });
 
 export function generarInformePdf(report) {
+  // Un informe a un alumno sigue el formulario en papel de la escuela; los avisos usan este diseño
+  if (report.alcance === 'individual') return generarFormularioConvivencia(report);
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const W = 210;
   const H = 297;
