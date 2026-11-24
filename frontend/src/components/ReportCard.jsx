@@ -20,14 +20,16 @@ const ReportCard = ({ report, onOpen }) => {
         <h3 className="text-[15px] font-semibold text-slate-800 leading-snug line-clamp-2 mt-0.5">{report.titulo}</h3>
         <div className="flex flex-wrap items-center gap-1.5 mt-2">
           {!esAviso(report) && <ChipGravedad report={report} />}
-          <ChipEstado report={report} />
+          {!esAviso(report) && <ChipEstado report={report} />}
           <span className="text-xs text-slate-500">
             {esAviso(report) ? (report.alcance === 'curso' ? 'Aviso al curso' : 'Aviso a toda la comunidad') : `${report.tipo ? `${TIPOS[report.tipo] || report.tipo} · ` : ''}${n} ${n === 1 ? 'intervención' : 'intervenciones'}`}
           </span>
         </div>
-        <div className="mt-2.5 max-w-[14rem]">
-          <BarraAvance report={report} />
-        </div>
+        {!esAviso(report) && (
+          <div className="mt-2.5 max-w-[14rem]">
+            <BarraAvance report={report} />
+          </div>
+        )}
       </div>
       <ChevronRight size={16} className="mt-2 shrink-0 text-slate-300" />
     </article>

@@ -7,7 +7,8 @@ const PAGE_SIZE = 8;
 const FILTROS = [['', 'Todos'], ['abierto', 'Abiertos'], ['en_revision', 'En revisión'], ['cerrado', 'Cerrados']];
 
 // Una de las dos tarjetas del panel: informes (a un alumno) o avisos (a un curso o a toda la comunidad).
-// Cada tarjeta tiene su propio filtro por estado y su paginación; la búsqueda y el curso se comparten.
+// Cada tarjeta tiene su paginación; solo los informes tienen filtro por estado (los avisos no muestran estados).
+// La búsqueda y el curso se comparten.
 const PanelLista = ({ grupo, titulo, descripcion, icono: Icono, vacio, busqueda, curso, version, onOpen, onNuevo, textoNuevo, onCounts }) => {
   const [reports, setReports] = useState([]);
   const [page, setPage] = useState(1);
@@ -62,6 +63,7 @@ const PanelLista = ({ grupo, titulo, descripcion, icono: Icono, vacio, busqueda,
             </button>
           )}
         </div>
+        {grupo !== 'avisos' && (
         <div className="flex gap-1.5 mt-3 overflow-x-auto pb-0.5">
           {FILTROS.map(([valor, texto]) => (
             <button
@@ -74,6 +76,7 @@ const PanelLista = ({ grupo, titulo, descripcion, icono: Icono, vacio, busqueda,
             </button>
           ))}
         </div>
+        )}
       </header>
 
       {!cargando && reports.length === 0 ? (

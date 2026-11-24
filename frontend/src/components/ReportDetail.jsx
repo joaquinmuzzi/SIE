@@ -49,14 +49,18 @@ const ReportDetail = ({ report, permisos, onBack, onEdit, onChangeState, onClose
         <div className="mt-3">
           <Etiquetas report={report} />
         </div>
-        <div className="mt-5">
-          <BarraAvance report={report} />
-        </div>
-        <div className="flex mt-1.5 text-[11px] font-semibold text-slate-400">
-          {pasos.map((p, k) => (
-            <span key={p} className={`flex-1 ${k < etapaActual(report) ? 'text-slate-800' : ''}`}>{p}</span>
-          ))}
-        </div>
+        {!esAviso(report) && (
+          <>
+            <div className="mt-5">
+              <BarraAvance report={report} />
+            </div>
+            <div className="flex mt-1.5 text-[11px] font-semibold text-slate-400">
+              {pasos.map((p, k) => (
+                <span key={p} className={`flex-1 ${k < etapaActual(report) ? 'text-slate-800' : ''}`}>{p}</span>
+              ))}
+            </div>
+          </>
+        )}
         <p className="text-sm font-normal text-slate-400 mt-4">
           Creado por {nombreCompleto(report.creadoPor)} ({ROLES[report.creadoPor?.rol] || report.creadoPor?.rol}) · {fechaCorta(report.fecha)}
         </p>
