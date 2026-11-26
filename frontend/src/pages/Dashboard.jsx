@@ -25,6 +25,7 @@ const Dashboard = () => {
   // Al cambiar algo se incrementa y las dos tarjetas vuelven a pedir sus listas
   const [version, setVersion] = useState(0);
   const [alumnos, setAlumnos] = useState([]);
+  const [estadoAlumnos, setEstadoAlumnos] = useState('cargando'); // 'cargando' | 'ok' | 'error'
   const [cursos, setCursos] = useState([]);
   // vista: 'lista' | 'detalle' | 'form' | 'usuarios' | 'perfil' | 'cuenta' | 'estadisticas'
   const [vista, setVista] = useState('lista');
@@ -64,9 +65,7 @@ const Dashboard = () => {
   useEffect(() => {
     // Datos vigentes del usuario (por ejemplo, si le asignaron la función de PAT después de iniciar sesión)
     refrescar().catch(() => {});
-    if (canCreate) {
-      api.get('/auth/alumnos').then(({ data }) => setAlumnos(data)).catch(() => {});
-    }
+    if (canCreate) cargarAlumnos();
     // El catalogo lo usan los formularios y el filtro por curso (todo el personal)
     if (user.rol !== 'alumno') api.get('/cursos').then(({ data }) => setCursos(data)).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -87,7 +86,17 @@ const Dashboard = () => {
     window.scrollTo(0, 0);
   };
 
+  // La lista de alumnos se pide de nuevo cada vez que se abre el formulario: asi incluye las cuentas
+  // creadas despues de entrar y no queda vacia si el primer pedido fallo
+  const cargarAlumnos = () => {
+    setEstadoAlumnos((e) => (alumnos.length ? e : 'cargando'));
+    return api.get('/auth/alumnos')
+      .then(({ data }) => { setAlumnos(Array.isArray(data) ? data : []); setEstadoAlumnos('ok'); })
+      .catch(() => setEstadoAlumnos('error'));
+  };
+
   const nuevo = (modo) => {
+    if (modo === 'informe') cargarAlumnos();
     setModoNuevo(modo);
     setEditando(null);
     setVista('form');
@@ -162,6 +171,8 @@ const Dashboard = () => {
           textoPat: isAdmin || esPat,
         }}
         alumnos={alumnos}
+        estadoAlumnos={estadoAlumnos}
+        onReintentarAlumnos={cargarAlumnos}
         cursos={cursos}
         onCancel={editando ? () => abrir(editando) : irALista}
         onSubmit={guardar}

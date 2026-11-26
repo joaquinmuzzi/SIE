@@ -42,7 +42,7 @@ const desdeInforme = (r) => ({
   id_alumno: r.alumno?._id || '',
 });
 
-const ReportForm = ({ report, modo = 'informe', permisos, alumnos, cursos: catalogo = [], onCancel, onSubmit }) => {
+const ReportForm = ({ report, modo = 'informe', permisos, alumnos, estadoAlumnos = 'ok', onReintentarAlumnos, cursos: catalogo = [], onCancel, onSubmit }) => {
   const editando = !!report;
   const esAviso = modo === 'aviso';
   const nombre = esAviso ? 'aviso' : 'informe';
@@ -197,11 +197,22 @@ const ReportForm = ({ report, modo = 'informe', permisos, alumnos, cursos: catal
                 <input className={`${ENTRADA} pl-9`} placeholder="Ej: 40123456" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
               </div>
               <select className={ENTRADA} value={form.id_alumno} onChange={elegirAlumno} required>
-                <option value="">Seleccionar alumno...</option>
+                <option value="">
+                  {estadoAlumnos === 'cargando' && !alumnos.length ? 'Cargando alumnos...'
+                    : !alumnos.length ? 'No hay alumnos cargados'
+                      : busqueda && !alumnosFiltrados.length ? 'Ningún alumno coincide con la búsqueda'
+                        : 'Seleccionar alumno...'}
+                </option>
                 {alumnosFiltrados.map((a) => (
                   <option key={a._id} value={a._id}>{nombreCompleto(a)}{a.dni ? ` · DNI ${a.dni}` : ''}{a.curso ? ` · ${a.curso}` : ''}</option>
                 ))}
               </select>
+              {estadoAlumnos === 'error' && (
+                <p className="text-sm text-red-700">
+                  No se pudo cargar la lista de alumnos.{' '}
+                  <button type="button" onClick={onReintentarAlumnos} className="font-semibold underline">Reintentar</button>
+                </p>
+              )}
             </div>
             <div>
               <span className={ETIQUETA}>Responsable a notificar (por correo)</span>
