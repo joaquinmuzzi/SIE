@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { BadgeCheck, KeyRound, MailCheck, MailWarning, Trash2, UserPlus } from 'lucide-react';
+import { BadgeCheck, KeyRound, MailCheck, MailWarning, Trash2, UserPlus, Users } from 'lucide-react';
 import api from '../api/axios';
 import { ROLES, nombreCompleto } from './ui';
 import CursosPanel from './CursosPanel';
+import PatAlumnosModal from './PatAlumnosModal';
 
 const ENTRADA = 'w-full bg-white border border-slate-300 rounded-sm px-3 py-2.5 font-normal focus:outline-none focus:ring-2 focus:ring-brand';
 const ETIQUETA = 'block text-sm font-semibold text-slate-700 mb-1';
@@ -23,6 +24,7 @@ const ListaUsuarios = ({ user, cursos }) => {
   const [aviso, setAviso] = useState(null); // { tipo: 'ok' | 'atencion' | 'error', texto, clave }
   const [ocupado, setOcupado] = useState(false);
   const [filtro, setFiltro] = useState('');
+  const [patModal, setPatModal] = useState(null); // usuario al que se le eligen los alumnos a cargo
 
   const cargar = () => api.get('/auth/users').then(({ data }) => setUsuarios(data)).catch(() => {});
   useEffect(() => { cargar(); }, []);
@@ -51,7 +53,9 @@ const ListaUsuarios = ({ user, cursos }) => {
       resultado(data, `Cuenta creada para ${nombreCompleto(data)}`);
       setForm(VACIO);
       setAbierto(false);
-      cargar();
+      await cargar();
+      // Si se creó con la función de PAT, se eligen enseguida sus alumnos a cargo
+      if (data.es_pat) setPatModal(data);
     } catch (err) {
       setAviso({ tipo: 'error', texto: err.response?.data?.message || 'No se pudo crear la cuenta' });
     } finally {
@@ -71,20 +75,29 @@ const ListaUsuarios = ({ user, cursos }) => {
     }
   };
 
-  const cambiarFuncionPat = async (u) => {
-    const asignar = !u.es_pat;
-    const texto = asignar
-      ? `¿Asignarle la función de PAT a ${nombreCompleto(u)}? Va a poder redactar el texto del PAT en los informes.`
-      : `¿Quitarle la función de PAT a ${nombreCompleto(u)}?`;
-    if (!window.confirm(texto)) return;
+  const aCargo = (u) => usuarios.filter((a) => a.rol === 'alumno' && a.id_pat === u._id).length;
+
+  // Asignar PAT abre la ventana para elegir los alumnos; quitarla libera a todos sus alumnos
+  const quitarFuncionPat = async (u) => {
+    const n = aCargo(u);
+    if (!window.confirm(`¿Quitarle la función de PAT a ${nombreCompleto(u)}?${n ? ` Sus ${n} alumno(s) a cargo quedan sin PAT.` : ''}`)) return;
     setAviso(null);
     try {
-      await api.patch(`/auth/users/${u._id}/pat`, { es_pat: asignar });
-      setAviso({ tipo: 'ok', texto: asignar ? `${nombreCompleto(u)} ahora cumple la función de PAT.` : `${nombreCompleto(u)} ya no cumple la función de PAT.` });
+      await api.patch(`/auth/users/${u._id}/pat`, { es_pat: false });
+      setAviso({ tipo: 'ok', texto: `${nombreCompleto(u)} ya no cumple la función de PAT.` });
       cargar();
     } catch (err) {
       setAviso({ tipo: 'error', texto: err.response?.data?.message || 'No se pudo cambiar la función de PAT' });
     }
+  };
+
+  const guardarAlumnosPat = async (ids) => {
+    const u = patModal;
+    const { data } = await api.patch(`/auth/users/${u._id}/pat`, { es_pat: true, alumnos: ids });
+    const n = data.alumnos_a_cargo;
+    setAviso({ tipo: 'ok', texto: `${nombreCompleto(u)} cumple la función de PAT con ${n} ${n === 1 ? 'alumno' : 'alumnos'} a cargo.` });
+    setPatModal(null);
+    cargar();
   };
 
   const eliminar = async (u) => {
@@ -211,15 +224,26 @@ const ListaUsuarios = ({ user, cursos }) => {
                 <td className="px-4 py-3 font-medium text-slate-900">{nombreCompleto(u)}{u.curso && <span className="block text-xs font-normal text-slate-400">{u.curso}</span>}</td>
                 <td className="px-4 py-3 text-slate-600">
                   {ROLES[u.rol] || u.rol}
-                  {Boolean(u.es_pat) && <span className="ml-1.5 inline-flex rounded-sm bg-violet-50 px-1.5 py-0.5 text-[11px] font-semibold text-violet-700 ring-1 ring-inset ring-violet-200">PAT</span>}
+                  {Boolean(u.es_pat) && <span className="ml-1.5 inline-flex rounded-sm bg-violet-50 px-1.5 py-0.5 text-[11px] font-semibold text-violet-700 ring-1 ring-inset ring-violet-200">PAT · {aCargo(u)} {aCargo(u) === 1 ? 'alumno' : 'alumnos'}</span>}
                 </td>
                 <td className="px-4 py-3 text-slate-600">{u.email}</td>
                 <td className="px-4 py-3">{u.debe_cambiar_clave ? <span className="text-amber-700 font-medium">Temporal, sin estrenar</span> : <span className="text-slate-500">Propia</span>}</td>
                 <td className="px-4 py-3 text-right whitespace-nowrap">
                   {ROLES_CON_FUNCION_PAT.includes(u.rol) && (
-                    <button onClick={() => cambiarFuncionPat(u)} className="inline-flex items-center gap-1 text-slate-500 hover:text-violet-700 font-medium mr-4" title={u.es_pat ? 'Quitar la función de PAT' : 'Asignar la función de PAT'}>
-                      <BadgeCheck size={15} /> {u.es_pat ? 'Quitar PAT' : 'Asignar PAT'}
-                    </button>
+                    u.es_pat ? (
+                      <>
+                        <button onClick={() => setPatModal(u)} className="inline-flex items-center gap-1 text-violet-700 hover:text-violet-900 font-medium mr-4" title="Elegir los alumnos a cargo">
+                          <Users size={15} /> Alumnos a cargo
+                        </button>
+                        <button onClick={() => quitarFuncionPat(u)} className="inline-flex items-center gap-1 text-slate-500 hover:text-violet-700 font-medium mr-4" title="Quitar la función de PAT">
+                          <BadgeCheck size={15} /> Quitar PAT
+                        </button>
+                      </>
+                    ) : (
+                      <button onClick={() => setPatModal(u)} className="inline-flex items-center gap-1 text-slate-500 hover:text-violet-700 font-medium mr-4" title="Asignar la función de PAT y elegir sus alumnos">
+                        <BadgeCheck size={15} /> Asignar PAT
+                      </button>
+                    )
                   )}
                   <button onClick={() => eliminar(u)} className="inline-flex items-center gap-1 text-slate-400 hover:text-red-700 font-medium mr-4" title="Eliminar la cuenta (solo si no tiene informes)">
                     <Trash2 size={15} /> Eliminar
@@ -234,6 +258,7 @@ const ListaUsuarios = ({ user, cursos }) => {
           </tbody>
         </table>
       </div>
+      {patModal && <PatAlumnosModal pat={patModal} usuarios={usuarios} onCerrar={() => setPatModal(null)} onGuardar={guardarAlumnosPat} />}
     </div>
   );
 };

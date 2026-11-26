@@ -172,6 +172,7 @@ exports.deleteUser = async (req, res) => {
         message: `No se puede eliminar a ${user.nombre} ${user.apellido}: tiene ${informes.n} informe(s) asociado(s) y los informes se conservan como antecedente.`,
       });
     }
+    await pool.query('UPDATE usuarios SET id_pat = NULL WHERE id_pat = ?', [id]);
     await pool.query('DELETE FROM usuarios WHERE id_usuario = ?', [id]);
     res.json({ message: `Cuenta de ${user.nombre} ${user.apellido} eliminada` });
   } catch (error) {
@@ -224,7 +225,7 @@ exports.getUsers = async (req, res) => {
   try {
     const [rows] = await pool.query(
       `SELECT id_usuario AS _id, nombre, apellido, email, rol, dni, telefono, cargo, curso,
-              responsable_nombre, responsable_email, responsable_telefono, debe_cambiar_clave, es_pat
+              responsable_nombre, responsable_email, responsable_telefono, debe_cambiar_clave, es_pat, id_pat
          FROM usuarios WHERE rol NOT IN ('padre', 'tutor') ORDER BY apellido, nombre`
     );
     res.json(rows);
@@ -244,8 +245,31 @@ exports.setFuncionPat = async (req, res) => {
       return res.status(400).json({ message: 'La funcion de PAT se asigna solo a profesores y preceptores' });
     }
     const esPat = Boolean(req.body.es_pat);
-    await pool.query('UPDATE usuarios SET es_pat = ? WHERE id_usuario = ?', [esPat ? 1 : 0, user.id_usuario]);
-    res.json(datosPublicos({ ...user, es_pat: esPat }));
+    // Alumnos a cargo: si viene la lista, reemplaza la anterior; al quitar la funcion se liberan todos
+    const lista = Array.isArray(req.body.alumnos)
+      ? [...new Set(req.body.alumnos.map(Number).filter((n) => Number.isInteger(n) && n > 0))]
+      : null;
+    const conn = await pool.getConnection();
+    let aCargo = 0;
+    try {
+      await conn.beginTransaction();
+      await conn.query('UPDATE usuarios SET es_pat = ? WHERE id_usuario = ?', [esPat ? 1 : 0, user.id_usuario]);
+      if (!esPat || lista) {
+        await conn.query('UPDATE usuarios SET id_pat = NULL WHERE id_pat = ?', [user.id_usuario]);
+      }
+      if (esPat && lista && lista.length) {
+        await conn.query("UPDATE usuarios SET id_pat = ? WHERE rol = 'alumno' AND id_usuario IN (?)", [user.id_usuario, lista]);
+      }
+      const [[cuenta]] = await conn.query('SELECT COUNT(*) AS n FROM usuarios WHERE id_pat = ?', [user.id_usuario]);
+      aCargo = cuenta.n;
+      await conn.commit();
+    } catch (e) {
+      await conn.rollback();
+      throw e;
+    } finally {
+      conn.release();
+    }
+    res.json({ ...datosPublicos({ ...user, es_pat: esPat }), alumnos_a_cargo: aCargo });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

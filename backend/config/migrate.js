@@ -28,6 +28,8 @@ async function migrar() {
 
   // Funcion de PAT asignable a un profesor o preceptor (sin crear otro rol)
   await asegurarColumna('usuarios', 'es_pat', 'TINYINT(1) NOT NULL DEFAULT 0');
+  // Cada alumno puede tener un PAT a cargo (id del profesor o preceptor con la funcion de PAT)
+  await asegurarColumna('usuarios', 'id_pat', 'INT NULL DEFAULT NULL');
 
   // La gravedad la asignan solo el gestor o la regencia: un informe nuevo puede quedar "sin asignar"
   const [[grav]] = await pool.query(
