@@ -224,33 +224,35 @@ const ListaUsuarios = ({ user, cursos }) => {
                 <td className="px-4 py-3 font-medium text-slate-900">{nombreCompleto(u)}{u.curso && <span className="block text-xs font-normal text-slate-400">{u.curso}</span>}</td>
                 <td className="px-4 py-3 text-slate-600">
                   {ROLES[u.rol] || u.rol}
-                  {Boolean(u.es_pat) && <span className="ml-1.5 inline-flex rounded-sm bg-violet-50 px-1.5 py-0.5 text-[11px] font-semibold text-violet-700 ring-1 ring-inset ring-violet-200">PAT · {aCargo(u)} {aCargo(u) === 1 ? 'alumno' : 'alumnos'}</span>}
+                  {Boolean(u.es_pat) && <span className="ml-1.5 inline-flex rounded-sm bg-violet-50 px-1.5 py-0.5 text-[11px] font-semibold text-violet-700 ring-1 ring-inset ring-violet-200">PAT</span>}
                 </td>
-                <td className="px-4 py-3 text-slate-600">{u.email}</td>
+                <td className="px-4 py-3 text-slate-600 [overflow-wrap:anywhere]">{u.email.split('@')[0]}@<wbr />{u.email.split('@').slice(1).join('@')}</td>
                 <td className="px-4 py-3">{u.debe_cambiar_clave ? <span className="text-amber-700 font-medium">Temporal, sin estrenar</span> : <span className="text-slate-500">Propia</span>}</td>
-                <td className="px-4 py-3 text-right whitespace-nowrap">
+                <td className="px-4 py-3">
+                  <div className="flex flex-wrap justify-end gap-x-4 gap-y-1.5">
                   {ROLES_CON_FUNCION_PAT.includes(u.rol) && (
                     u.es_pat ? (
                       <>
-                        <button onClick={() => setPatModal(u)} className="inline-flex items-center gap-1 text-violet-700 hover:text-violet-900 font-medium mr-4" title="Elegir los alumnos a cargo">
+                        <button onClick={() => setPatModal(u)} className="inline-flex items-center gap-1 text-violet-700 hover:text-violet-900 font-medium whitespace-nowrap" title="Elegir los alumnos a cargo">
                           <Users size={15} /> Alumnos a cargo
                         </button>
-                        <button onClick={() => quitarFuncionPat(u)} className="inline-flex items-center gap-1 text-slate-500 hover:text-violet-700 font-medium mr-4" title="Quitar la función de PAT">
+                        <button onClick={() => quitarFuncionPat(u)} className="inline-flex items-center gap-1 text-slate-500 hover:text-violet-700 font-medium whitespace-nowrap" title="Quitar la función de PAT">
                           <BadgeCheck size={15} /> Quitar PAT
                         </button>
                       </>
                     ) : (
-                      <button onClick={() => setPatModal(u)} className="inline-flex items-center gap-1 text-slate-500 hover:text-violet-700 font-medium mr-4" title="Asignar la función de PAT y elegir sus alumnos">
+                      <button onClick={() => setPatModal(u)} className="inline-flex items-center gap-1 text-slate-500 hover:text-violet-700 font-medium whitespace-nowrap" title="Asignar la función de PAT y elegir sus alumnos">
                         <BadgeCheck size={15} /> Asignar PAT
                       </button>
                     )
                   )}
-                  <button onClick={() => eliminar(u)} className="inline-flex items-center gap-1 text-slate-400 hover:text-red-700 font-medium mr-4" title="Eliminar la cuenta (solo si no tiene informes)">
+                  <button onClick={() => eliminar(u)} className="inline-flex items-center gap-1 text-slate-400 hover:text-red-700 font-medium whitespace-nowrap" title="Eliminar la cuenta (solo si no tiene informes)">
                     <Trash2 size={15} /> Eliminar
                   </button>
-                  <button onClick={() => restablecer(u)} className="inline-flex items-center gap-1 text-slate-500 hover:text-brand font-medium" title="Enviar una nueva contraseña temporal">
+                  <button onClick={() => restablecer(u)} className="inline-flex items-center gap-1 text-slate-500 hover:text-brand font-medium whitespace-nowrap" title="Enviar una nueva contraseña temporal">
                     <KeyRound size={15} /> Restablecer
                   </button>
+                  </div>
                 </td>
               </tr>
             ))}
