@@ -106,7 +106,7 @@ const ReportForm = ({ report, modo = 'informe', permisos, alumnos, estadoAlumnos
       <form onSubmit={enviar} className="bg-white border border-slate-200 rounded p-6 mt-5 space-y-5">
         <div>
           <label className={ETIQUETA} htmlFor="titulo">Título</label>
-          <input id="titulo" className={ENTRADA} value={form.titulo} onChange={set('titulo')} disabled={bloquearDatos} required list="titulos-sugeridos" autoComplete="off" />
+          <input id="titulo" className={ENTRADA} value={form.titulo} onChange={set('titulo')} disabled={bloquearDatos} required maxLength={200} list="titulos-sugeridos" autoComplete="off" />
           {/* Autocompletado: titulos frecuentes segun el tipo (el navegador los sugiere al escribir) */}
           <datalist id="titulos-sugeridos">
             {(esAviso ? TITULOS_AVISO : TITULOS_INFORME[form.tipo] || []).map((t) => <option key={t} value={t} />)}

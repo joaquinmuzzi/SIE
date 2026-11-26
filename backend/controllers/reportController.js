@@ -1,3 +1,4 @@
+const { responderError } = require('../services/errores');
 const Report = require('../models/Report');
 const mailer = require('../services/mailer');
 const mensajes = require('../services/mensajes');
@@ -11,6 +12,23 @@ const { puedeAsignarGravedad, camposEditables, leerGravedad, veSoloSusAlumnos, p
 const anotar = (datos) => historial.registrar(datos).catch((e) => console.error('[historial]', e.message));
 
 const nombreCompleto = (u) => `${u.nombre || ''} ${u.apellido || ''}`.trim();
+
+const TITULO_MAX = 200;
+const LIMITE_MAX = 100;
+const conTexto = (v) => typeof v === 'string' && v.trim() !== '';
+
+/** Devuelve el mensaje de error del titulo, o null si es valido. */
+function errorTitulo(titulo) {
+  if (!conTexto(titulo)) return 'El titulo es obligatorio';
+  if (titulo.trim().length > TITULO_MAX) return `El titulo no puede superar los ${TITULO_MAX} caracteres`;
+  return null;
+}
+
+/** true si el id corresponde a un usuario con rol alumno. */
+async function esAlumno(id) {
+  const [filas] = await pool.query("SELECT 1 FROM usuarios WHERE id_usuario = ? AND rol = 'alumno'", [id]);
+  return filas.length > 0;
+}
 
 // Avisos por mail de un informe individual: nunca hacen fallar la operacion principal
 async function avisarNuevoInforme(informe) {
@@ -62,7 +80,7 @@ exports.getReports = async (req, res) => {
     }
 
     const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
-    const limit = Math.max(parseInt(req.query.limit, 10) || 10, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 10, 1), LIMITE_MAX);
     filters.limit = limit;
     filters.offset = (page - 1) * limit;
 
@@ -81,7 +99,7 @@ exports.getReports = async (req, res) => {
       counts,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    responderError(res, error);
   }
 };
 
@@ -100,8 +118,23 @@ exports.createReport = async (req, res) => {
       return res.status(400).json({ message: 'Alcance invalido. Valores permitidos: individual, curso, todos' });
     }
 
-    if (alcanceFinal === 'individual' && !id_alumno) {
-      return res.status(400).json({ message: 'El alumno es obligatorio para crear un informe individual' });
+    const tituloInvalido = errorTitulo(titulo);
+    if (tituloInvalido) {
+      return res.status(400).json({ message: tituloInvalido });
+    }
+
+    if (alcanceFinal === 'individual') {
+      if (!id_alumno) {
+        return res.status(400).json({ message: 'El alumno es obligatorio para crear un informe individual' });
+      }
+      if (!(await esAlumno(id_alumno))) {
+        return res.status(400).json({ message: 'El alumno elegido no existe o no es un alumno' });
+      }
+      if (![texto_profesor, texto_regente, texto_pat].some(conTexto)) {
+        return res.status(400).json({ message: 'El informe tiene que tener una descripcion de lo sucedido' });
+      }
+    } else if (![texto_profesor, texto_regente, texto_pat].some(conTexto)) {
+      return res.status(400).json({ message: 'El aviso tiene que tener un texto' });
     }
     if (alcanceFinal === 'curso') {
       if (!curso_destino) {
@@ -128,7 +161,7 @@ exports.createReport = async (req, res) => {
     }
 
     const report = await Report.create({
-      titulo,
+      titulo: titulo.trim(),
       // Los avisos (a un curso o a toda la comunidad) no tienen tipo de conducta ni gravedad
       tipo: alcanceFinal === 'individual' ? tipo || 'conducta' : null,
       gravedad: gravedadFinal,
@@ -149,7 +182,7 @@ exports.createReport = async (req, res) => {
     anotar({ idInforme: report._id, usuarioId: req.user.id_usuario, accion: 'creado', estadoNuevo: report.estado });
     res.status(201).json(report);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    responderError(res, error, 400);
   }
 };
 
@@ -182,6 +215,22 @@ exports.updateReport = async (req, res) => {
     for (const campo of permitidos) {
       if (req.body[campo] !== undefined) updateData[campo] = req.body[campo];
     }
+    if (updateData.titulo !== undefined) {
+      const tituloInvalido = errorTitulo(updateData.titulo);
+      if (tituloInvalido) return res.status(400).json({ message: tituloInvalido });
+      updateData.titulo = updateData.titulo.trim();
+    }
+    if (updateData.id_alumno !== undefined && !(await esAlumno(updateData.id_alumno))) {
+      return res.status(400).json({ message: 'El alumno elegido no existe o no es un alumno' });
+    }
+    if (updateData.estado !== undefined && !['abierto', 'en_revision', 'cerrado'].includes(updateData.estado)) {
+      return res.status(400).json({ message: 'Estado invalido. Valores permitidos: abierto, en_revision, cerrado' });
+    }
+    // Un aviso no puede quedar sin texto; un informe, sin ninguna de sus descripciones
+    const textos = ['texto_profesor', 'texto_regente', 'texto_pat'].map((k) => (updateData[k] !== undefined ? updateData[k] : report[k]));
+    if (['texto_profesor', 'texto_regente', 'texto_pat'].some((k) => updateData[k] !== undefined) && !textos.some(conTexto)) {
+      return res.status(400).json({ message: report.alcance === 'individual' ? 'El informe tiene que tener una descripcion de lo sucedido' : 'El aviso tiene que tener un texto' });
+    }
     if (updateData.gravedad !== undefined) {
       updateData.gravedad = leerGravedad(updateData.gravedad);
       if (updateData.gravedad === undefined) {
@@ -200,7 +249,7 @@ exports.updateReport = async (req, res) => {
     }
     res.json(updatedReport);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    responderError(res, error);
   }
 };
 
@@ -236,7 +285,7 @@ exports.addDescargo = async (req, res) => {
     anotar({ idInforme: report._id, usuarioId: req.user.id_usuario, accion: 'descargo' });
     res.json(updatedReport);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    responderError(res, error);
   }
 };
 
@@ -253,7 +302,7 @@ exports.deleteReport = async (req, res) => {
     }
     res.json({ message: 'Informe cerrado', informe: updatedReport });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    responderError(res, error);
   }
 };
 
@@ -270,6 +319,11 @@ exports.changeState = async (req, res) => {
       return res.status(400).json({ message: 'Estado invalido. Valores permitidos: abierto, en_revision, cerrado' });
     }
 
+    // Un informe cerrado es definitivo: no se reabre
+    if (report.estado === 'cerrado' && estado !== 'cerrado') {
+      return res.status(400).json({ message: 'El informe ya esta cerrado: no se puede reabrir' });
+    }
+
     const updatedReport = await Report.update(req.params.id, { estado });
     if (estado !== report.estado) {
       anotar({ idInforme: report._id, usuarioId: req.user.id_usuario, accion: 'estado', estadoAnterior: report.estado, estadoNuevo: estado });
@@ -277,6 +331,6 @@ exports.changeState = async (req, res) => {
     }
     res.json(updatedReport);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    responderError(res, error);
   }
 };
