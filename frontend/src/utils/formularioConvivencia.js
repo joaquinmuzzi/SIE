@@ -1,4 +1,5 @@
 import { jsPDF } from 'jspdf';
+import { ESCUDO_ET35, ESCUDO_PROPORCION } from './escudoEt35.js';
 
 // PDF de un informe a un alumno: sigue el formulario en papel "Informe de Convivencia" de la escuela.
 // Cada punto del formulario se completa con los datos del sistema; lo que falta queda con lineas
@@ -70,20 +71,20 @@ export function generarFormularioConvivencia(report) {
 
   // ---- Encabezado institucional
   color(NEGRO);
-  doc.setDrawColor(60, 60, 60).setLineWidth(0.4).circle(W / 2, 17, 6);
-  doc.setFont('helvetica', 'bold').setFontSize(7.5).text('E.T. 35', W / 2, 18, { align: 'center' });
+  const anchoEscudo = 17;
+  doc.addImage(ESCUDO_ET35, 'JPEG', W / 2 - anchoEscudo / 2, 8, anchoEscudo, anchoEscudo * ESCUDO_PROPORCION);
   doc.setFont('helvetica', 'bold').setFontSize(8);
-  doc.text('GOBIERNO DE LA CIUDAD AUTÓNOMA DE BUENOS AIRES', W / 2, 28, { align: 'center' });
-  doc.text('MINISTERIO DE EDUCACIÓN', W / 2, 32, { align: 'center' });
+  doc.text('GOBIERNO DE LA CIUDAD AUTÓNOMA DE BUENOS AIRES', W / 2, 34, { align: 'center' });
+  doc.text('MINISTERIO DE EDUCACIÓN', W / 2, 38, { align: 'center' });
   doc.setFont('helvetica', 'normal').setFontSize(8);
-  doc.text('E.T. Nº 35 D.E. 18, "Ing. Eduardo Latzina"', W / 2, 36, { align: 'center' });
-  doc.setFont('helvetica', 'bold').setFontSize(12).text('INFORME DE CONVIVENCIA', W / 2, 45, { align: 'center' });
+  doc.text('E.T. Nº 35 D.E. 18, "Ing. Eduardo Latzina"', W / 2, 42, { align: 'center' });
+  doc.setFont('helvetica', 'bold').setFontSize(12).text('INFORME DE CONVIVENCIA', W / 2, 50, { align: 'center' });
   const tw = doc.getTextWidth('INFORME DE CONVIVENCIA');
-  doc.setDrawColor(20, 20, 20).setLineWidth(0.4).line(W / 2 - tw / 2, 46.2, W / 2 + tw / 2, 46.2);
+  doc.setDrawColor(20, 20, 20).setLineWidth(0.4).line(W / 2 - tw / 2, 51.2, W / 2 + tw / 2, 51.2);
   doc.setFont('helvetica', 'normal').setFontSize(8).setTextColor(110, 110, 110);
   const ref = `N.º ${String(report._id).padStart(5, '0')}${report.titulo ? ` · ${report.titulo}` : ''}`;
-  doc.text(doc.splitTextToSize(ref, ancho)[0], W / 2, 51, { align: 'center' });
-  y = 60;
+  doc.text(doc.splitTextToSize(ref, ancho)[0], W / 2, 56, { align: 'center' });
+  y = 64;
 
   // ---- 1. Alumno, año y division
   const m = CURSO_RE.exec(report.alumno?.curso || '');
