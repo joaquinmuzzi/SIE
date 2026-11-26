@@ -1,3 +1,4 @@
+import escudo from '../assets/escudo-et35.png';
 // Pantallas de acceso: tarjeta centrada sobre formas rectas con los colores institucionales
 const AuthLayout = ({ titulo, subtitulo, ancho = 'max-w-sm', children }) => (
   <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden bg-slate-100">
@@ -5,7 +6,7 @@ const AuthLayout = ({ titulo, subtitulo, ancho = 'max-w-sm', children }) => (
     <div className="absolute top-24 right-40 w-44 h-44 bg-brand-dark rotate-12 hidden sm:block" />
     <div className="absolute -bottom-32 -left-24 w-96 h-96 bg-slate-900 -rotate-12" />
     <div className={`relative w-full ${ancho} bg-white rounded shadow-xl shadow-slate-900/10 p-8 my-8`}>
-      <div className="w-12 h-12 rounded-sm bg-brand text-white grid place-items-center font-semibold mb-5">35</div>
+      <img src={escudo} alt="Escudo de la E.T. N° 35" className="w-14 h-auto mb-5" />
       <h1 className="text-2xl font-semibold text-slate-900">{titulo}</h1>
       <p className="text-slate-500 font-normal mt-1 mb-6">{subtitulo}</p>
       {children}

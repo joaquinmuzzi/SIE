@@ -1,5 +1,6 @@
 import { BarChart3, Inbox, LogOut, Megaphone, Plus, Settings, UserCircle, Users } from 'lucide-react';
 import { ROLES, iniciales, nombreCompleto } from './ui';
+import escudo from '../assets/escudo-et35.png';
 
 const Contador = ({ n, texto, punto }) => (
   <div className="bg-white/5 rounded-sm px-3 py-2.5">
@@ -25,7 +26,7 @@ const AppShell = ({ user, counts, canCreate, vista, ancho, onNuevo, onNuevoAviso
     <div className="min-h-screen">
       <aside className="hidden lg:flex fixed inset-y-0 left-0 w-72 flex-col bg-slate-900 text-slate-300 px-6 py-7">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 shrink-0 rounded-sm bg-white text-brand grid place-items-center text-sm font-bold">35</div>
+          <img src={escudo} alt="Escudo de la E.T. N° 35" className="w-10 h-auto shrink-0" />
           <div className="leading-tight">
             <p className="text-sm font-semibold text-white">Escuela Técnica N° 35</p>
             <p className="text-xs text-slate-400">Sistema de Informes Escolares</p>
