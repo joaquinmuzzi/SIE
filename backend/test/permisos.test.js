@@ -1,7 +1,7 @@
 // Tests de los permisos sobre los informes: gravedad solo para gestor y regencia, y funcion de PAT para docentes.
 const { test, describe } = require('node:test');
 const assert = require('node:assert/strict');
-const { puedeAsignarGravedad, cumpleFuncionPat, camposEditables, leerGravedad } = require('../services/permisos');
+const { puedeAsignarGravedad, cumpleFuncionPat, camposEditables, leerGravedad, veSoloSusAlumnos, puedeVerInformePersonal } = require('../services/permisos');
 
 const usuario = (rol, extra = {}) => ({ id_usuario: 10, rol, es_pat: 0, ...extra });
 const informe = (extra = {}) => ({ alcance: 'individual', creadoPor: { _id: 10 }, ...extra });
@@ -74,5 +74,28 @@ describe('funcion de PAT', () => {
   });
   test('[correcto] Asesoria / DOE / PAT sigue redactando el texto del PAT', () => {
     assert.ok(camposEditables(usuario('asesoria_pedagogica'), informe()).has('texto_pat'));
+  });
+});
+
+describe('PAT ve solo los informes de sus alumnos', () => {
+  const pat = usuario('profesor', { es_pat: 1 });
+  test('[correcto] ve los informes de sus alumnos a cargo y los que creo', () => {
+    assert.equal(puedeVerInformePersonal(pat, informe({ creadoPor: { _id: 99 }, alumno: { id_pat: 10 } })), true);
+    assert.equal(puedeVerInformePersonal(pat, informe({ creadoPor: { _id: 10 }, alumno: { id_pat: 55 } })), true);
+  });
+  test('[invalido] no ve informes de alumnos de otro PAT o sin PAT', () => {
+    assert.equal(puedeVerInformePersonal(pat, informe({ creadoPor: { _id: 99 }, alumno: { id_pat: 55 } })), false);
+    assert.equal(puedeVerInformePersonal(pat, informe({ creadoPor: { _id: 99 }, alumno: { id_pat: null } })), false);
+  });
+  test('[limite] los avisos los ve siempre', () => {
+    assert.equal(puedeVerInformePersonal(pat, informe({ alcance: 'curso', creadoPor: { _id: 99 } })), true);
+    assert.equal(puedeVerInformePersonal(pat, informe({ alcance: 'todos', creadoPor: { _id: 99 } })), true);
+  });
+  test('[correcto] un profesor sin funcion de PAT, la asesoria y la regencia siguen viendo todo', () => {
+    const ajeno = informe({ creadoPor: { _id: 99 }, alumno: { id_pat: 55 } });
+    for (const u of [usuario('profesor'), usuario('asesoria_pedagogica'), usuario('regente'), usuario('gestor')]) {
+      assert.equal(veSoloSusAlumnos(u), false, u.rol);
+      assert.equal(puedeVerInformePersonal(u, ajeno), true, u.rol);
+    }
   });
 });

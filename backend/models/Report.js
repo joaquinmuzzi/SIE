@@ -26,6 +26,7 @@ const baseSelect = `
     al.responsable_nombre   AS "alumno.responsable_nombre",
     al.responsable_email    AS "alumno.responsable_email",
     al.responsable_telefono AS "alumno.responsable_telefono",
+    al.id_pat           AS "alumno.id_pat",
     cp.id_usuario       AS "creadoPor._id",
     cp.nombre           AS "creadoPor.nombre",
     cp.apellido         AS "creadoPor.apellido",
@@ -55,6 +56,12 @@ function buildWhere(filters) {
   if (orConditions.length) {
     andConditions.push(`(${orConditions.join(' OR ')})`);
     andParams.push(...orParams);
+  }
+
+  // PAT (profesor o preceptor): informes de sus alumnos a cargo o creados por el; los avisos se ven igual
+  if (filters && filters.patId) {
+    andConditions.push("(i.alcance <> 'individual' OR i.creado_por_id = ? OR al.id_pat = ?)");
+    andParams.push(filters.patId, filters.patId);
   }
 
   if (filters && filters.grupo === 'informes') {
@@ -97,6 +104,7 @@ function nestPopulated(row) {
     responsable_nombre: row['alumno.responsable_nombre'],
     responsable_email: row['alumno.responsable_email'],
     responsable_telefono: row['alumno.responsable_telefono'],
+    id_pat: row['alumno.id_pat'],
   };
   const creadoPor = {
     _id: row['creadoPor._id'],

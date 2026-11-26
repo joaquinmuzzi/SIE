@@ -5,7 +5,7 @@ const { sumarDiasHabiles, config } = require('../services/ciclo');
 const { pool } = require('../config/db');
 const { etiquetaCurso } = require('../services/cursos');
 const historial = require('../repositories/historialRepository');
-const { puedeAsignarGravedad, camposEditables, leerGravedad } = require('../services/permisos');
+const { puedeAsignarGravedad, camposEditables, leerGravedad, veSoloSusAlumnos, puedeVerInformePersonal } = require('../services/permisos');
 
 // El historial es un registro auxiliar: si falla, no debe romper la operacion
 const anotar = (datos) => historial.registrar(datos).catch((e) => console.error('[historial]', e.message));
@@ -40,6 +40,9 @@ exports.getReports = async (req, res) => {
     if (rol === 'alumno') {
       filters.alumnoId = req.user.id_usuario;
       filters.curso = req.user.curso;
+    }
+    if (veSoloSusAlumnos(req.user)) {
+      filters.patId = req.user.id_usuario;
     }
 
     if (['abierto', 'en_revision', 'cerrado'].includes(req.query.estado)) {
@@ -155,6 +158,10 @@ exports.updateReport = async (req, res) => {
     const report = await Report.findById(req.params.id);
     if (!report) {
       return res.status(404).json({ message: 'Informe no encontrado' });
+    }
+
+    if (!puedeVerInformePersonal(req.user, report)) {
+      return res.status(403).json({ message: 'Solo podes ver los informes de tus alumnos a cargo' });
     }
 
     if (report.estado === 'cerrado') {

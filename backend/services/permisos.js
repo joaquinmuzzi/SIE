@@ -11,6 +11,16 @@ const cumpleFuncionPat = (user) => ROLES_PAT.includes(user.rol) || (ROLES_CON_FU
 
 const esAviso = (alcance) => alcance === 'curso' || alcance === 'todos';
 
+// Un profesor o preceptor con funcion de PAT ve solo los informes de sus alumnos a cargo y los que el creo.
+// El rol de Asesoria / DOE / PAT y el resto del personal siguen viendo todos los informes.
+const veSoloSusAlumnos = (user) => ROLES_CON_FUNCION_PAT.includes(user.rol) && Boolean(user.es_pat);
+
+/** Si un miembro del personal puede ver un informe (los avisos los ve siempre). */
+function puedeVerInformePersonal(user, report) {
+  if (!veSoloSusAlumnos(user) || esAviso(report.alcance)) return true;
+  return report.creadoPor?._id === user.id_usuario || report.alumno?.id_pat === user.id_usuario;
+}
+
 /** Campos de un informe abierto que el usuario puede modificar. */
 function camposEditables(user, report) {
   const campos = new Set();
@@ -42,4 +52,7 @@ function leerGravedad(valor) {
   return GRAVEDADES.includes(valor) ? valor : undefined;
 }
 
-module.exports = { GRAVEDADES, ROLES_CON_FUNCION_PAT, puedeAsignarGravedad, cumpleFuncionPat, esAviso, camposEditables, leerGravedad };
+module.exports = {
+  GRAVEDADES, ROLES_CON_FUNCION_PAT, puedeAsignarGravedad, cumpleFuncionPat, esAviso, camposEditables, leerGravedad,
+  veSoloSusAlumnos, puedeVerInformePersonal,
+};
