@@ -2,12 +2,13 @@
 const { pool } = require('../config/db');
 const Report = require('../models/Report');
 const historial = require('../repositories/historialRepository');
+const { veSoloSusAlumnos, puedeVerInformePersonal } = require('../services/permisos');
 
 const ROLES_PERSONAL = ['gestor', 'directivo', 'regente', 'profesor', 'preceptor', 'asesoria_pedagogica', 'doe', 'pat', 'secretaria'];
 
 // El personal ve todos los informes; el alumno solo los suyos, los de su curso y los generales
 function puedeVer(usuario, informe) {
-  if (ROLES_PERSONAL.includes(usuario.rol)) return true;
+  if (ROLES_PERSONAL.includes(usuario.rol)) return puedeVerInformePersonal(usuario, informe);
   if (usuario.rol !== 'alumno') return false;
   if (informe.alcance === 'todos') return true;
   if (informe.alcance === 'curso') return informe.curso_destino === usuario.curso;
@@ -42,8 +43,18 @@ exports.getEstadisticas = async (req, res) => {
       return res.status(403).json({ message: 'Las estadisticas son solo para el personal de la escuela' });
     }
     const curso = String(req.query.curso || '').trim();
-    const where = curso ? 'WHERE (al.curso = ? OR i.curso_destino = ?)' : '';
-    const params = curso ? [curso, curso] : [];
+    const condiciones = [];
+    const params = [];
+    if (curso) {
+      condiciones.push('(al.curso = ? OR i.curso_destino = ?)');
+      params.push(curso, curso);
+    }
+    // Un profesor o preceptor PAT ve estadisticas solo de los informes que puede ver
+    if (veSoloSusAlumnos(req.user)) {
+      condiciones.push("(i.alcance <> 'individual' OR i.creado_por_id = ? OR al.id_pat = ?)");
+      params.push(req.user.id_usuario, req.user.id_usuario);
+    }
+    const where = condiciones.length ? `WHERE ${condiciones.join(' AND ')}` : '';
     const desde = `FROM informes i LEFT JOIN usuarios al ON i.id_alumno = al.id_usuario ${where}`;
     const y = (extra) => (where ? `${where} AND ${extra}` : `WHERE ${extra}`);
     const base = 'FROM informes i LEFT JOIN usuarios al ON i.id_alumno = al.id_usuario';
