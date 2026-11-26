@@ -1,3 +1,4 @@
+const { responderError } = require('../services/errores');
 const { pool } = require('../config/db');
 const { etiquetaCurso, validarCurso } = require('../services/cursos');
 
@@ -15,7 +16,7 @@ exports.listarCursos = async (req, res) => {
     );
     res.json(filas.map((f) => conEtiqueta({ ...f, alumnos: Number(f.alumnos) })));
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    responderError(res, error);
   }
 };
 
@@ -32,7 +33,7 @@ exports.crearCurso = async (req, res) => {
     const [r] = await pool.query('INSERT INTO cursos (anio, division, turno, especialidad) VALUES (?, ?, ?, ?)', [anio, division, turno, especialidad]);
     res.status(201).json(conEtiqueta({ _id: r.insertId, ...v.curso, alumnos: 0 }));
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    responderError(res, error);
   }
 };
 
@@ -55,7 +56,7 @@ exports.actualizarCurso = async (req, res) => {
     await pool.query('UPDATE cursos SET turno = ?, especialidad = ? WHERE id_curso = ?', [v.curso.turno, v.curso.especialidad, id]);
     res.json(conEtiqueta({ _id: id, ...v.curso }));
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    responderError(res, error);
   }
 };
 
@@ -78,6 +79,6 @@ exports.eliminarCurso = async (req, res) => {
     await pool.query('DELETE FROM cursos WHERE id_curso = ?', [id]);
     res.json({ message: `Curso ${etiqueta} eliminado` });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    responderError(res, error);
   }
 };

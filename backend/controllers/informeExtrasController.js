@@ -1,3 +1,4 @@
+const { responderError } = require('../services/errores');
 // Historial de un informe y estadisticas generales.
 const { pool } = require('../config/db');
 const Report = require('../models/Report');
@@ -31,7 +32,7 @@ exports.getHistorial = async (req, res) => {
     }
     res.json(eventos);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    responderError(res, error);
   }
 };
 
@@ -99,6 +100,6 @@ exports.getEstadisticas = async (req, res) => {
       descargos: { presentados: Number(descargos?.presentados || 0), vencidos: Number(descargos?.vencidos || 0), enPlazo: Number(descargos?.en_plazo || 0) },
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    responderError(res, error);
   }
 };

@@ -1,3 +1,4 @@
+const { responderError } = require('../services/errores');
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const { pool } = require('../config/db');
@@ -54,7 +55,7 @@ exports.loginUser = async (req, res) => {
       res.status(401).json({ message: 'Email o contrasena invalidos' });
     }
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    responderError(res, error);
   }
 };
 
@@ -119,7 +120,7 @@ exports.createUser = async (req, res) => {
     if (!mail.enviado) respuesta.claveTemporal = clave;
     res.status(201).json(respuesta);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    responderError(res, error);
   }
 };
 
@@ -139,7 +140,7 @@ exports.resetPassword = async (req, res) => {
     if (!mail.enviado) respuesta.claveTemporal = clave;
     res.json(respuesta);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    responderError(res, error);
   }
 };
 
@@ -176,7 +177,7 @@ exports.deleteUser = async (req, res) => {
     await pool.query('DELETE FROM usuarios WHERE id_usuario = ?', [id]);
     res.json({ message: `Cuenta de ${user.nombre} ${user.apellido} eliminada` });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    responderError(res, error);
   }
 };
 
@@ -204,7 +205,7 @@ exports.changePassword = async (req, res) => {
     mailer.enviar({ para: user.email, ...mensajes.claveCambiada({ nombre: user.nombre }) }).catch(() => {});
     res.json({ message: 'Contrasena actualizada' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    responderError(res, error);
   }
 };
 
@@ -217,7 +218,7 @@ exports.getAlumnos = async (req, res) => {
     );
     res.json(rows);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    responderError(res, error);
   }
 };
 
@@ -230,7 +231,7 @@ exports.getUsers = async (req, res) => {
     );
     res.json(rows);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    responderError(res, error);
   }
 };
 
@@ -271,7 +272,7 @@ exports.setFuncionPat = async (req, res) => {
     }
     res.json({ ...datosPublicos({ ...user, es_pat: esPat }), alumnos_a_cargo: aCargo });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    responderError(res, error);
   }
 };
 
@@ -290,6 +291,6 @@ exports.updatePerfil = async (req, res) => {
     await pool.query('UPDATE usuarios SET telefono = ? WHERE id_usuario = ?', [telefono || null, req.user.id_usuario]);
     res.json(datosPublicos(await User.findById(req.user.id_usuario)));
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    responderError(res, error);
   }
 };
